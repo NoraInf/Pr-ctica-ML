@@ -1,0 +1,154 @@
+---
+title: "Estudio de la Mortalidad Global"
+author: "Nora Infantes Llinares"
+date: "2026-04-30"
+output: pdf_document
+---
+
+
+
+## Consultoría Propuesta
+
+En el siguiente documento procederemos con el estudio de la mortalidad en función de diferentes variables, con el fin de determinar las causas de mortalidad en la población, tanto la región. Para este estudio hemos elegido el DataSet **Life Expectancy**, que recopila una amplia gama de datos recopliados por la Organización Mundial de la Salud.
+
+```{r}
+# Cargar el dataset (sustituye la ruta o el nombre si tu archivo se llama distinto)
+datos <- read.csv("DATASET.csv")
+
+# Ver la estructura interna (tipos de datos y primeros valores)
+str(datos)
+
+# Obtener un resumen estadístico básico de todas las variables
+summary(datos)
+```
+
+
+## Variables de interés:
+
+
+Antes de navegar en código puro debemos hacer un análisis conceptual y visual de nuestras variables, y tras relaizarlo procederemos a realizar la selección de un subconjunto.  
+Primero que todo, vamos a ver no solo que representa cada variable sino por que tipo de dato está constituida. Para eso tenemos necesitamos cargar el DataSet y determinaremos que variables son de interés para nuestra investigación, para eso, utilizaremos un bloque de código para garantizar la visualización de los datos. Teniendo eso en mente, imputaremos los datos, eliminando los **valores ausentes (NA)**.
+
+```{r}
+# Código de Hugo
+```
+
+
+### Variables Identificadoras
+  * **Country**: País de origen de los datos (Categórica / Texto).
+
+  * **Year**: Año en el que se registraron las observaciones, desde el 2000 hasta el 2015 (Numérica discreta / Años).
+
+  * **Status**: Estado de desarrollo del país: "Developed" (Desarrollado) o "Developing" (En vías de desarrollo) (Categórica / Binaria). Puede ser bastante interesante para nuestro estudio, ya que cómo bien es sabido, los paises en desarrollo tienen menor acceso a servicios sanitarios en condiciones.
+
+### Variable Dependiente (Objetivo)
+  * **Life expectancy**: Esperanza de vida media al nacer (Numérica continua / Años). Muy importante para lo que queremos estudiar.
+
+# Variables de Salud y Mortalidad
+Todas estas variables pueden ser interesantes para determinar los grupos de riesgo entre la sociedad mundial, separando entre, por ejemplo, adultos y menores. Para contextualizar en mayor medida la naturaleza de los datos, hay que tener en cuenta que los valores que van de 0 a 100 son probabilidades (*cómo las variables correspondientes a 'thinness'*), mientras que los que van de 0 a 1000 (*variable 'Adult Mortality'*) son ratios que indican los desesos por cada mil habitantes de cierto subgrupo dividido por el rango de edad.
+
+  * **Adult Mortality**: Probabilidad de que ambos sexos mueran *entre los 15 y los 60 años* (Numérica continua / Muertes por cada 1000 habitantes).
+
+  * **infant deaths**: Número de muertes de *bebés menores de 1 año* (Numérica continua / Muertes por cada 1000 habitantes).
+
+  * **under-five deaths**: Número de muertes de niños *menores de 5 años* (Numérica continua / Muertes por cada 1000 habitantes).
+
+  * **HIV/AIDS**: Número de muertes causadas por VIH/SIDA en niños de 0 a 4 años (Numérica continua / Muertes por cada 1000 nacidos vivos).
+
+  * **BMI**: *Índice de Masa Corporal medio* de toda la población (Numérica continua / Valor del índice).
+
+  * **thinness 1-19 years**: Prevalencia de *delgadez en niños y adolescentes* de 10 a 19 años (Numérica continua / Porcentaje %).
+
+  * **thinness 5-9 years**: Prevalencia de *delgadez en niños* de 5 a 9 años (Numérica continua / Porcentaje %).
+
+### Variables de Inmunización
+  * **Hepatitis B**: Cobertura de la vacuna contra la Hepatitis B en niños de 1 año (Numérica continua / Porcentaje %).
+
+  * **Measles**: Número de casos de sarampión reportados (Numérica discreta / Casos por cada 1000 habitantes).
+
+  * **Polio**: Cobertura de la vacuna contra la Polio (Pol3) en niños de 1 año (Numérica continua / Porcentaje %).
+
+  * **Diphtheria**: Cobertura de la vacuna contra la difteria, el tétanos y la tos ferina (DTP3) en niños de 1 año (Numérica continua / Porcentaje %).
+
+### Variables Económicas y Sociales
+  * **GDP**: Producto Interior Bruto per cápita (Numérica continua / Dólares estadounidenses USD).
+
+  * **percentage expenditure**: Gasto en salud como porcentaje del Producto Interior Bruto per cápita (Numérica continua / Porcentaje %).
+
+  * **Total expenditure**: Gasto del gobierno en salud como porcentaje del gasto total del gobierno en todos los sectores (Numérica continua / Porcentaje %).
+
+  * **Alcohol**: Consumo de alcohol per cápita en mayores de 15 años (Numérica continua / Litros de alcohol puro).
+
+  * **Population**: Población total del país (Numérica continua / Número de habitantes).
+
+  * **Income composition of resources**: Índice de Desarrollo Humano que evalúa la utilización productiva de los recursos o la composición de los ingresos (Numérica continua / Índice de 0 a 1).
+
+  * **Schooling**: Número promedio de años de escolarización de la población (Numérica continua / Años).
+  
+  
+Tras realizar un análisis lógico de las variables pertenecientes a nuestro dataset hemos decidido seleccionar las siguientes variables por las siguientes causas:
+
+<!--
+Alcohol, Population, Income composition of Resources, PERCENTAGE EXPENDITURE,
+
+Pueden ser Interesantes: Status, Country (difícil de trabajar) 
+
+Se puede hacer un estudio de la mortalidad infantil junto con las -->
+
+
+```{r}
+# Función para calcular el Coeficiente de correlacion multiple.
+rho.mult<-function(datos) 
+# datos: matriz con las variables del problema.
+# La primera columna debe ser la variable respuesta.
+# Las restantes p-1 columnas son las variables explicativas.
+{
+  matriz<-var(datos)
+  
+  # calculo
+  n<-nrow(datos)
+  p<-ncol(matriz)
+  sxx<-matriz[2:p,2:p]
+  syx<-matrix(matriz[1,2:p],nrow=1)
+  sxy<-t(syx)
+  
+  #coeficiente
+  rho.mult<-sqrt(syx%*%solve(sxx)%*%sxy)/sqrt(matriz[1,1])
+  
+  cat("\n Coeficiente de correlación múltiple: ",rho.mult,"\n")
+  
+  #estadistico
+  if(abs(rho.mult)==1)
+  stop("Imposible resolver contraste.
+  Coeficiente de correlación múltiple igual a 1", call. = FALSE)
+  else{
+  est<-((n-(p-1)-1)*rho.mult)/((p-1)*(1-rho.mult^2))
+  
+  #grafico
+  par(mfrow=c(1,1))
+  
+  x<-seq(0,qf(0.999,p-1,n-(p-1)-1),length=500)
+  
+  plot(x,df(x,p-1,n-(p-1)-1),type="l",ylab="densidad",
+       main="Contraste Correlación Múltiple")
+  abline(v=qf(0.975,p-1,n-(p-1)-1),col="red")
+  abline(v=qf(0.025,p-1,n-(p-1)-1),col="red")
+  abline(v=est,col="blue")
+  abline(h=0)
+  
+  legend(qf(0.98,p-1,n-(p-1)-1),pf((p+3)/(n-p),p-1,n-(p-1)-1),
+         c("Estadístico","Región Crítica"),lty=rep(1,2),
+         col=c("blue","red"),bty="n")
+  
+  cat("\n Estadístico de contraste: ",round(est,3),"\n")
+  
+  cat("\n p-valor: ",round(2*(1-pf(est,p-1,n-(p-1)-1)),3),"\n\n")}
+  
+  return(invisible())
+}
+```
+
+
+```{r}
+rho.mult(datos)
+```

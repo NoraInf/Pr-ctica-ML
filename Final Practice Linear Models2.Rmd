@@ -1,0 +1,171 @@
+---
+title: "Consultoría Estratégica: Esperanza de Vida"
+author: "Data Solutions"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document:
+    theme: flatly
+urlcolor: blue
+linkcolor: blue
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Consultoría Propuesta
+
+Uno de los aspectos más estudiados de la historia y que más interesa es la esperanza de vida, pues,
+al ser seres racionales, nuestro objetivo es **alargar la vida lo máximo posible**. Es por este motivo 
+que *presentamos una base de datos dedicada a la esperanza de vida* y los factores que 
+pueden influir en ella. Dicha base de datos es **Life Expectancy** (World Health Organization) y resulta
+idónea porque *recopila información de 193 países*, durante un periodo de 15 años (2000-2015).
+
+La elección de esta base de datos se justifica plenamente por su relevancia analítica y su complejidad
+multivariante (22 variables). El proceso de modelización estadística de estos datos nos permitirán 
+ser capaces de analizar como influyen las distintas variables a la esperanza de vida y como podemos **predecir** 
+**casos futuros** basados en nuestro modelo. Además este dataset no está centrado en un solo ámbito, pues incluye
+variables explicativas de índole demográfica, económica y de salud.
+
+Además, es de alto valor para el cliente porque traduce toda la complejidad númerica en decisiones estratégicas
+claras. Al identificar que factores tienen un impacto real en la longevidad, el cliente podrá **optimizar su**
+**inversión en recursos** y predecir el efecto de futuras políticas socioeconómicas.
+
+# Estudio de las variables
+
+## Visualización preliminar
+Antes de profundizar en el código, debemos hacer un análisis preliminar de nuestras
+variables, esto nos permitirá seleccionar un subconjunto de mayor interés de las 
+mismas.
+
+```{r}
+datos <- read.csv("DATASET.csv")
+options(scipen = 999)
+
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(purrr)
+
+resumen_integral <- datos %>%
+  map_df(~ {
+    es_num <- is.numeric(.x)
+    data.frame(
+      Tipo = class(.x)[1],
+      Primeras_3_Obs = paste(head(.x, 3), collapse = " | "),
+      Minimo = if(es_num) round(min(.x, na.rm = TRUE), 2) else NA,
+      Q1 = if(es_num) round(quantile(.x, 0.25, na.rm = TRUE), 2) else NA,
+      Mediana = if(es_num) round(median(.x, na.rm = TRUE), 2) else NA,
+      Media = if(es_num) round(mean(.x, na.rm = TRUE), 2) else NA,
+      Q3 = if(es_num) round(quantile(.x, 0.75, na.rm = TRUE), 2) else NA,
+      Maximo = if(es_num) round(max(.x, na.rm = TRUE), 2) else NA,
+      NAs = sum(is.na(.x))
+    )
+  }, .id = "Variable")
+
+resumen_integral[is.na(resumen_integral)] <- "-"
+
+kable(resumen_integral, format = "latex", booktabs = TRUE, align = "c", row.names = FALSE,
+      caption = "Análisis Exploratorio Integral: Todas las Variables (Numéricas y Categóricas)") %>%
+  kable_styling(latex_options = c("scale_down", "hold_position")) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(2, color = "#E67E22", bold = TRUE) %>%
+  column_spec(3, italic = TRUE)
+
+```
+
+## Información Detallada
+En la tabla anterior, podemos ver un resumen de cada variable, así como unas primeras observaciones
+y el tipo de dato. A continuación presento la información detallada de cada una[^1]:
+
+### Variables Identificadoras
+  * **Country**: País de origen de los datos (Texto).
+
+  * **Year**: Año en el que se registraron las observaciones, desde el 2000 hasta el 2015 (Años).
+
+  * **Status**: Estado de desarrollo del país: "Developed" (Desarrollado) o "Developing" (En vías de desarrollo) (Binaria). Puede ser *bastante interesante para nuestro estudio*, ya que cómo bien es sabido, los *paises en desarrollo tienen menor acceso a servicios sanitarios en condiciones*. No obstante, la variable añade una dificultad extra a la hora de ser implementada en el modelo, por eso debemos de cerciorarnos de hacerlo de forma correcta (por ej. **Función Indicatriz**, **Modelo de ANOVA**).
+
+### Variable Dependiente (Objetivo)
+  * **Life expectancy**: Esperanza de vida media al nacer (Años). Muy importante para lo que queremos estudiar.
+
+### Variables de Salud y Mortalidad
+Todas estas variables pueden ser interesantes para determinar los grupos de riesgo entre la sociedad mundial, separando entre, por ejemplo, adultos y menores. Para contextualizar en mayor medida la naturaleza de los datos, hay que tener en cuenta que los valores que van de 0 a 100 son probabilidades (*cómo las variables correspondientes a 'thinness'*), mientras que los que van de 0 a 1000 (*variable 'Adult Mortality'*) son ratios que indican los desesos por cada mil habitantes de cierto subgrupo dividido por el rango de edad.
+
+  * **Adult Mortality**: Probabilidad de que ambos sexos mueran *entre los 15 y los 60 años* (Muertes por cada 1000 habitantes).
+
+  * **infant deaths**: Número de muertes de *bebés menores de 1 año* (Muertes por cada 1000 habitantes).
+
+  * **under-five deaths**: Número de muertes de niños *menores de 5 años* (Muertes por cada 1000 habitantes).
+
+  * **HIV/AIDS**: Número de muertes causadas por VIH/SIDA en niños de 0 a 4 años (Muertes por cada 1000 nacidos vivos).
+
+  * **BMI**: *Índice de Masa Corporal medio* de toda la población (Valor del índice).
+
+  * **thinness 1-19 years**: Prevalencia de *delgadez en niños y adolescentes* de 10 a 19 años (Porcentaje %).
+
+  * **thinness 5-9 years**: Prevalencia de *delgadez en niños* de 5 a 9 años (Porcentaje %).
+
+### Variables de Inmunización
+  * **Hepatitis B**: Cobertura de la vacuna contra la Hepatitis B en niños de 1 año (Porcentaje %).
+
+  * **Measles**: Número de casos de sarampión reportados (Casos por cada 1000 habitantes).
+
+  * **Polio**: Cobertura de la vacuna contra la Polio (Pol3) en niños de 1 año (Porcentaje %).
+
+  * **Diphtheria**: Cobertura de la vacuna contra la difteria, el tétanos y la tos ferina (DTP3) en niños de 1 año (Porcentaje %).
+
+### Variables Económicas y Sociales
+  * **GDP**: Producto Interior Bruto per cápita (Dólares estadounidenses USD).
+
+  * **percentage expenditure**: Gasto en salud como porcentaje del Producto Interior Bruto per cápita (Porcentaje %).
+
+  * **Total expenditure**: Gasto del gobierno en salud como porcentaje del gasto total del gobierno en todos los sectores (Porcentaje %).
+
+  * **Alcohol**: Consumo de alcohol per cápita en mayores de 15 años (Litros de alcohol puro).
+
+  * **Population**: Población total del país (Número de habitantes).
+
+  * **Income composition of resources**: Índice de Desarrollo Humano que evalúa la utilización productiva de los recursos o la composición de los ingresos (Índice de 0 a 1).
+
+  * **Schooling**: Número promedio de años de escolarización de la población (Años).
+  
+## Identificación y Justificación de las Variables
+Tras realizar una lectura exhaustiva, concluimos que las variables de interes para este estudio son:
+
+**Variable Dependiente ($y$):**
+
+- La **esperanza de vida (`Life Expectancy`)** es un indicador primordial para evaluar el bienestar
+de la población. Es por esto y su naturaleza continua que podemos que podemos aplicar técnicas
+de inferencia para cuantificar como ciertos factores estructurales alteran la longevidad.
+
+**Variables Explicativas ($x_i$):**
+
+- **Total expenditure (Gasto total):** Representa el presupuesto gubernamental en sanidad; Gasto en
+recursos hospitalarios e investigaciones que permiten prolongar la vida del individuo.
+
+- **Alcohol:** Se considera por su toxicidad, debido a que en altas dosis puede reducir la longevidad.
+
+- **Population (Población):** Si en tamaño de la población crece más rápido que la carga que la infraestructura sanitaria puede soportar, el sistema colapsa y los recursos disminuyen.
+
+- **GPD (PIB):** Un mayor PIB refleja la capacidad de un país para financiar sistemas de salud robusto, infraestructuras de saneamiento e incluso acceso a agua potable. Todo esto reduce la mortalidad general elevando la esperanza de vida.
+
+- **Schooling (Escolarización):** Determinantes sociales más importantes. La población educada tiende a adoptar hábitos preverntivos.
+
+- **Hepatitis B:** La inmunización a la enfermedad en el primer año de vida evita que el individuo desarrolle patologías hepáticas crónicas que se prolongen en toda su vida.
+
+- **Status (Estatus):** Clasifica el nivel de desarrollo nacional; influye en las condiciones básicas
+de vida y en el entorno de los ciudadanos.
+
+## Objetivo del Estudio
+
+El objetivo principal es predecir la esperanza de vida nacional mediante un modelo de regresión lineal
+múltiple. Los resultados permitirán al cliente apoyar decisiones estratégicas basadas en evidencia estadística,
+así como optimizar el gasto público en sanidad o diseñar nuevas propuestas para mejorar los hábitos
+generales de la población.
+
+
+[^1]: Kaggle: https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who
+

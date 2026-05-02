@@ -1,0 +1,246 @@
+---
+title: "Useful codes for the final practice"
+author: "Hugo"
+date: "2026-05-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+```{r}
+# Para la regresi´on m´ultiple
+fit<-lm(VOL~DBH+D16+HT)
+# la tabla de Anova se obtiene con
+aov(fit)
+# y dicha tabla junto con los p-valores calculados, con:
+afit<-anova(fit); afit
+# o con
+summary(aov(fit))
+
+```
+
+```{r}
+# Utilizamos ’afit’
+is.list(afit)
+# Determinamos primero el n´umero de efectos en la tabla, siendo
+# el ´ultimo el SSE residual; hemos de sumar los restantes:
+nterminos<-length(afit[[1]])
+gl.ssr<-sum(afit[[1]][-nterminos]);gl.ssr # afit[[1]]=g.l.
+ssr<-sum(afit[[2]][-nterminos]);ssr # afit[[2]]=SS
+gl.sse<-afit[[1]][nterminos]
+sse<-afit[[2]][nterminos]
+mse<-afit[[3]][nterminos] ;mse # afit[[3]]=MS
+# y calculamos el estad´ıstico F y sus g.l.:
+f<-(ssr/gl.ssr)/mse;f #=124.9329
+gl.f<-c(gl.ssr,gl.sse);gl.f #=(3,16)
+# y podemos calcular tambi´en el p-valor asociado
+p.f<-1-pf(f,gl.f[1],gl.f[2])
+# que coinciden con los que proporcionaba ’summary’
+summary(fit)
+# Pintamos la tabla Anova en formato ’tradicional’
+n<-length(VOL)
+sink("anova.tabla")
+cat("-----------------------------------------------------------\n")
+cat("TABLA DE ANOVA \n")
+cat(" gl SS MS F p-valor \n")
+cat(paste("Regresi´on ",gl.ssr," ",round(ssr,4)," ",
+round(ssr/gl.ssr,4)," ",round(f,4)," ",
+round(,4),"\n"))
+cat(paste("Error ",gl.sse," ",round(sse,4)," ",round(mse,4),"\n"))
+cat(paste("Total ",n-1," ",round((n-1)*var(VOL),4),"\n"))
+sink()
+```
+
+```{r}
+# El coeficiente de determinaci´on se obtiene con:
+sfit<-summary(fit)
+sfit$r.squared #=0.9590582
+# y su versi´on ajustada con:
+sfit$adj.r.squared #=0.9513816
+# Calculamos los par´ametros de la distribuci´on Beta de R2:
+n<-length(VOL) # n´umero de datos
+p<-length(fit$coefficients) # no par´ametros estimados
+par.r2<-c((p-1)/2,(n-p)/2)
+# el p-valor asociado al R2 observado es
+1-pbeta(sfit$r.squared,par.r2[1],par.r2[2]) #=2.587e-11
+# que coincide con el p-valor para el estad´ıstico F
+sfit$fstatistic
+```
+
+Vamos a presentar diversos criterios para comparar modelos y seleccionar el
+mejor modelo de entre dos alternativas. En ocasiones todos dar´an los mismos
+resultados, pero generalmente no, por lo que habr´a de ser el analista el que
+decida qu´e criterio utilizar en funci´on de sus intereses prioritarios. La selecci´on
+del modelo la podemos basar en:
+1. la significatividad de los predictores;
+2. el coeficiente de determinaci´on ajustado;
+3. el error residual del ajuste, s
+2
+;
+4. el estad´ıstico Cp de Mallows;
+5. el estad´ıstico AIC (Akaike Information Criteria);
+6. el error de predicci´on P RESS.
+
+Una vez seleccionado el “mejor” modelo seg´un el criterio elegido, habremos
+de proseguir la confirmaci´on del mismo realizando la diagnosis y la validaci´on
+del modelo, que puede fallar en alg´un paso, lo que nos conducir´ıa de nuevo a la
+reformulaci´on del modelo (y todos los pasos que le siguen), optando por aquellas
+correcciones y/o transformaciones de variables sugeridas en el diagn´ostico. La
+consecuci´on del mejor modelo ser´a pues, un procedimiento iterativo, basado en
+selecci´on y valoraci´on de la calidad del ajuste, diagn´ostico y validaci´on.
+
+```{r}
+# Obtenemos el AIC para sendos modelos:
+AIC(fit.3) #=107.4909
+AIC(fit.2) #=108.4066
+# y el BIC con:
+AIC(fit.3,k=log(nrow(bosque)))
+AIC(fit.2,k=log(nrow(bosque)))
+# o bien con:
+library(stats4)
+BIC(fit.3) #=112.4696
+BIC(fit.2) 
+```
+
+```{r}
+# El test F secuencial hemos de hacerlo manualmente con las
+# funciones ’drop1’ y ’add1’, partiendo del modelo completo:
+fit<-lm(VOL~.,data=bosque)
+drop1(fit,test="F")
+# sale no significativa DBH, con p-valor=0.1326
+# La quitamos y reajustamos
+fit.1<-update(fit,.~.-DBH)
+drop1(fit.1,test="F")
+# Ya todas las variables salen significativas. Paramos!!
+#---------------------------------------------------
+# La selecci´on secuencial con el AIC es autom´atica en R:
+step(fit)
+```
+
+1. Los gr´aficos entre variables explicativas son ´utiles para estudiar la relaci´on
+entre las variables explicativas y su disposici´on en el espacio, y con ello
+detectar correlaciones o identificar observaciones muy alejadas del resto de
+datos y que pueden influenciar notablemente la estimaci´on. Consisten en
+gr´aficos de dispersi´on entre un par de covariables continuas o un par de
+factores (a trav´es de sus c´odigos), y gr´aficos de cajas cuando se trata de
+investigar la relaci´on entre un factor y una covariable.
+
+2. Una medida simple de multicolinealidad consiste en la inspecci´on de los
+elementos fuera de la diagonal de la matriz X0X, es decir, las correlaciones
+simples rij entre todos los regresores. Si dos regresores xi y xj son casi
+linealmente dependientes, entonces |rij | ≈ 1. Sin embargo, cuando la multicolinealidad involucra a varias variables, no hay garant´ıas de detectarla a
+trav´es de las correlaciones bivariadas.
+
+3. Puesto que uno de los efectos principales de la multicolinealidad es la inflaci´on de la varianza y covarianza de las estimaciones, es posible calcular
+unos factores de inflaci´on de la varianza, FIV, que permiten apreciar tal efecto. En concreto, la varianza de βˆ
+j viene estimada por V ar(βˆ
+j ) = s
+2 Cjj ,
+donde C
+X
+jj son los elementos de la diagonal de la matriz (X0X)
+−1
+, es decir,
+C
+X
+jj =
+1
+(1 − R2
+j
+) Sxjxj
+, j = 1, 2, . . . , p,
+Generalmente, valores de un FIV superiores a 10 dan indicios de un problema de multicolinealidad,
+
+4. Dado que la multicolinealidad afecta a la singularidad (rango menor que
+p) de la matriz X0X, sus valores propios λ1, λ2, . . . , λp pueden revelar multicolinealidad en los datos. De hecho, si hay una o m´as dependencias casi
+lineales en los datos, entonces uno o m´as de los valores propios ser´a peque˜no.
+
+En lugar de buscar valores propios peque˜nos, se puede optar por calcular
+el n´umero de condici´on de X0X, definido por:
+κ = λmax/λmin, (6.47)
+que es una medida de dispersi´on en el espectro de valores propios de X0X.
+Generalmente, si el n´umero de condici´on es menor que 100, no hay problemas de multicolinealidad. N´umeros de condici´on entre 100 y 1000 implican
+multicolinealidad moderada, y mayores que 1000 implican multicolinealidad severa.
+
+6. Los´ındices de condici´on de la matriz X0X tambi´en son ´utiles para el diagn´ostico de multicolinealidad y se definen por:
+κj = λmax/λj
+,  = 1, . . . , p. (6.48)
+El n´umero de ´ındices de condici´on que son grandes (por ejemplo, ≥ 1000)
+es una medida ´util del n´umero de dependencias casi lineales en X0X.
+
+```{r}
+fit<-lm(sales~cost+ads,data=pizza,x=T)
+# que tiene como matriz de dise~no
+x<-fit$x
+# Inspeccionamos los elementos fuera de la diagonal de X’X
+x.x<-t(x)%*%x;x.x
+# que proporcionan las correlaciones entre ’ads’ y ’cost’,
+# tambi´en calculadas directamente con:
+cor(pizza) #=0.8949
+# Los valores FIV se calculan con:
+library(faraway)
+vif(fit)
+# = 5.021806(cost) 5.021806(ads)
+# que comparamos con 1/(1-R2):
+1/(1-summary(fit)$r.squared)
+#= 3.164693
+# Los valores propios de X’X:
+lambda<-eigen(x.x)$values;lambda
+#= 2586.8330506 10.2242966 0.2126529
+# N´umero de condici´on:
+kappa<-max(lambda)/min(lambda); kappa
+#= 12164.58
+# ´Indices de condici´on:
+kappa.j<-max(lambda)/lambda; kappa.j
+#= 1.0000 253.0084 12164.5803
+# An´alisis de componentes principales
+pr<-princomp(~ads+cost)
+pr$loadings
+# Componente 1: 0.804*ads-0.594*cost
+summary(pr)
+# Proportion of Variance 0.9513543
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,260 @@
+---
+title: "Consultoría estratégica: Crímenes Violentos"
+author: "Data SOlutions"
+output: pdf_document
+
+---
+
+```{r setup, include=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Consultoría Propuesta
+
+Uno de los aspectos que más preocupan a los ciudadanos, es su seguridad. Queremos
+ser capaces de poder ir por donde queramos, cuando queramos, sin que haya riesgo de
+que alguien salga perjudicado. Es por este motivo que presentamos una base de datos
+dedicada a los crímenes violentos, y el estudio de sus posibles causas. Dicha base
+de datos es "Communities and Crime".
+
+La elección de esta base de datos se justifica plenamento debido a que recopila datos
+reales del censo estadounidense de 1990, el informe de crímenes reportados del FBI de
+1995 y del estudio de estadísticas administrativas y del uso de la ley de 1990. Esta
+base de datos fue creada por Michael Redmon.
+
+Además, es de alto valor para el cliente porque traduce toda la complejidad númerica en decisiones estratégicas
+claras. Al identificar que factores tienen un impacto real en los crímenes violentos, el cliente podrá optimizar su
+inversión en recursos y predecir el efecto de futuras políticas socioeconómicas.
+
+# Estudio de las variables
+
+## Visualización preliminar
+Antes de profundizar en el código, debemos hacer un análisis preliminar de nuestras
+variables, esto nos permitirá seleccionar un subconjunto de mayor interés de las 
+mismas.
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(purrr)
+
+#Leemos el archivo .names para extraer los nombres de las columnas
+lineas_texto <- readLines("communities.names")
+
+#Buscamos las líneas que contienen "@attribute"
+lineas_atributos <- grep("@attribute", lineas_texto, value = TRUE)
+
+#Limpiamos el texto para quedarnos solo con el nombre de la variable
+#Esto quita la palabra "@attribute" y el tipo de dato (numeric, string, etc.)
+nombres_columnas <- gsub("@attribute ", "", lineas_atributos)
+nombres_columnas <- gsub(" .*", "", nombres_columnas)
+
+#Cargamos el archivo de datos
+datos <- read.csv("communities.data", header = FALSE, na.strings = "?")
+
+colnames(datos) <- nombres_columnas
+
+#Ahora lo mostramos de forma bonita
+resumen_integral <- datos %>%
+  map_df(~ {
+    es_num <- is.numeric(.x)
+    data.frame(
+      Tipo = class(.x)[1],
+      Primeras_3_Obs = paste(head(.x, 3), collapse = " | "),
+      NAs = sum(is.na(.x))
+    )
+  }, .id = "Variable")
+
+resumen_integral[is.na(resumen_integral)] <- "-"
+
+kable(resumen_integral, format = "html", align = "c", row.names = FALSE,
+      caption = "Análisis Exploratorio Integral: Todas las Variables (Numéricas y Categóricas)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(2, color = "#E67E22", bold = TRUE) %>%
+  column_spec(3, italic = TRUE)
+```
+
+## Información Variables y Justificación de Elección
+En la tabla anterior, podemos ver un resumen de cada variable, así como unas primeras observaciones
+y el tipo de dato.
+
+Debido al alto número de variables, hemos seleccionado un subconjunto de 18 variables, que creemos serán
+de mayor interés para el estudio.
+
+A continuación, presento la información detallada de cada una:
+
+## Variable Dependiente (Objetivo)
+
+* **ViolentCrimesPerPop: **Número total de crímenes violentos por cada cien mil habitantes. Esta es nuestra variable de mayor interés.
+
+## Variables Explicativas
+
+### Variables Identificadoras
+
+* **county: **Código numérico por condado (Esta no es predictiva pero nos sirve para un estudio más denso o detectar motivos ocultos).
+
+### Variables del Uso de la Ley
+
+* **LemasPctOfficDrugUn: **Porcentaje de oficiales asignados a la unidad de drogas. Nos interesa mucho, pues las drogas causan relaciones violentas en los individuos.
+
+* **PolicOperBudg: **Presupuesto operativo de la policía. Muy interesante, pues es veremos si más policías significan menos crímenes.
+
+* **PolicAveOTWorked: **Media de tiempo extra (o fuera de horario de contrato) trabajado.
+
+* **LemasTotReqPerPop: **Total de veces que se ha solicitado a la policía por cada cien mil personas.
+
+* **LemasSwFTPerPop: **Número de oficiales de la policia por cada cien mil habitantes.
+
+### Variables de Situación Familiar
+
+* **MalePctDivorce: **Porcentaje de individuos de género masculino que están divorciados. A veces los divorcios se realizan debido a situaciones violentas por parte del hombre.
+
+* **FemalePctDiv: **Porcentaje de individuos de género femenino que están divorciadas.
+
+* **TotalPctDiv: **Porcentae de la población que está divorciada. Muchas de las situaciones violentas resultan en divorcio, es muy importante.
+
+* **PctKids2Par: **Porcentaje de niños que viven en dos casas(de cada padre). Estas situaciones también pueden influir en la violencia doméstica.
+
+* **PctTeen2Par: **Porcentaje de niños de 12-17 años de edad en casa de la madre y padre (2 casas distintas).
+
+### Variables Económicas
+En general todas las siguientes creemos que influyen, pues normalmente, cuanto peor es la situación económica, más probabilidad hay de infelicidad y violencia, aunque lo analizaremos más adelante.
+
+* **medIncome: **Mediana de las ganancias por hogar. 
+
+* **PctPopUnderPov: **Porcentaje de personas por debajo de el nivel de pobreza.
+
+* **PctUnemployed: **Porcentaje de personas de 16 años o más, en trabajos forzados o desempleados.
+
+* **RentLowQ: **Cuartil 25 del coste de la renta.
+
+* **MedRent: **Mediana de la renta bruta.
+
+### Variables Sociales
+
+* **PctRecentImmig: **Porcentaje de la población que ha inmigrado en los últimos 3 años. En algunas ocasiones, puede influir el descontento o choque de culturas al principio.
+
+* **NumStreet: **Número de personas sin hogar contadas en las calles. Muy importante para nuestro estudio.
+
+Todas las variables presentadas son numéricas, el dataset no contiene variables categóricas de interés con las que construir un modelo anova o ancova tras nuestro regresión múltiple lineal.
+
+## Objetivo del estudio
+
+El objetivo principal es predecir el número de crímenes violentos por cada cien mil habitantes mediante un modelo de regresión lineal múltiple. Los resultados permitirán al cliente apoyar decisiones estratégicas basadas en evidencia estadística,
+así como optimizar el gasto público en seguridad o diseñar nuevas propuestas para mejorar el sistema actual.
+
+
+```{r, echo = FALSE}
+# 1. Cargamos las librerías necesarias
+library(tidyr)  
+
+variables_modelo <- c(
+"ViolentCrimesPerPop", # la variable dependiente a predecir
+"medIncome", #
+"PctPopUnderPov", #
+"PctUnemployed", #
+"MalePctDivorce", #
+"PctKids2Par", #
+"PctTeen2Par", #
+"PctRecentImmig", #
+"MedRent", #
+"NumStreet", #
+"LemasSwFTPerPop", 
+"LemasPctOfficDrugUn", #
+"PolicOperBudg", #
+"PolicAveOTWorked", #
+"LemasTotReqPerPop", #
+"RentLowQ", #
+"FemalePctDiv", #
+"TotalPctDiv",
+"county" #
+)
+
+# 2. Hacemos la selección y eliminamos las filas con NAs
+datos_modelo <- datos %>%
+  select(all_of(variables_modelo)) %>%
+  drop_na()
+```
+
+Antes de proceder, es importante no solamente saber la estructura interna de los datos o cómo se han almacenado, sino en un plano empírico, conocer su comportamiento en la vida real. Es decir, sería menester el **análisis univariante** de cada uno de los datos recopilados, para conocer su tendencia, dispersión y forma geométrica. El reconocimiento de patrones o ciertas tendencias pueden guiarnos para encontrar un diagnóstico acertado de las variables. De tal forma, garantizamos la correcta forma de trabajar con estos gracias a la identificación de **Outliers**, **Asimetría**, **Agrupación** y **Dispersión.**
+
+# Análisis Exploratorio de Datos
+
+## Análisis Univariante
+
+```{r}
+resumen_integral <- datos_modelo %>%
+  map_df(~ {
+    es_num <- is.numeric(.x)
+    data.frame(
+      Tipo = class(.x)[1],
+      Primeras_3_Obs = paste(head(.x, 3), collapse = " | "),
+      Minimo = if(es_num) round(min(.x, na.rm = TRUE), 2) else NA,
+      Q1 = if(es_num) round(quantile(.x, 0.25, na.rm = TRUE), 2) else NA,
+      Mediana = if(es_num) round(median(.x, na.rm = TRUE), 2) else NA,
+      Media = if(es_num) round(mean(.x, na.rm = TRUE), 2) else NA,
+      Q3 = if(es_num) round(quantile(.x, 0.75, na.rm = TRUE), 2) else NA,
+      Maximo = if(es_num) round(max(.x, na.rm = TRUE), 2) else NA,
+      NAs = sum(is.na(.x))
+    )
+  }, .id = "Variable")
+
+resumen_integral[is.na(resumen_integral)] <- "-"
+
+kable(resumen_integral, format = "html", align = "c", row.names = FALSE,
+      caption = "Análisis Exploratorio Univariante: Variables de Interés") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(2, color = "#E67E22", bold = TRUE) %>%
+  column_spec(3, italic = TRUE)
+```
+
+**Conclusiones: **
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

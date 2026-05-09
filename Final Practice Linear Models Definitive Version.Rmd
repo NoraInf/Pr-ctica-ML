@@ -352,11 +352,66 @@ variables_finales <- c(
 datos_modelo_final <- datos_modelo[, variables_finales]
 ```
 
+# Ajuste del modelo e Inferencia
 
+En base a la selección de variables previa, proponemos un modelo de Regresión Lineal Múltiple para predecir la tasa de crímenes violentos. El modelo teórico poblacional se especifica mediante la siguiente ecuación:
 
+$$ViolentCrimesPerPop = \beta_0 + \beta_1 PctKids2Par + \beta_2 PctUnemployed + \beta_3 TotalPctDiv + \beta_4 NumStreet + \beta_5 LemasSwFTPerPop + \epsilon$$
+Donde:
 
+$\beta_0$ representa el intercepto.
 
+$\beta_1, ..., \beta_5$ son los coeficientes parciales de regresión que miden el cambio en la variable dependiente por cada unidad de cambio en la variable independiente correspondiente.
 
+$\epsilon$ es el término de error aleatorio, asumiendo $\epsilon \sim N(0, \sigma^2)$.
+
+```{r}
+# Ajustamos el modelo lineal múltiple con las variables definitivas
+modelo_final <- lm(ViolentCrimesPerPop ~ PctKids2Par + PctUnemployed + TotalPctDiv + NumStreet + LemasSwFTPerPop, data = datos_modelo_final)
+
+# Extraemos los principales resultados (coeficientes y significatividad)
+sfit <- summary(modelo_final)
+tabla_coef <- as.data.frame(sfit$coefficients)
+
+colnames(tabla_coef) <- c("Estimación", "Error Estándar", "Valor t", "P-valor")
+
+tabla_coef$Estimación <- round(tabla_coef$Estimación, 4)
+tabla_coef$`Error Estándar` <- round(tabla_coef$`Error Estándar`, 4)
+tabla_coef$`Valor t` <- round(tabla_coef$`Valor t`, 4)
+
+tabla_coef$`P-valor` <- formatC(tabla_coef$`P-valor`, format = "e", digits = 3)
+
+kable(tabla_coef, format = "html", align = "c", 
+      caption = "Resumen de Coeficientes del Modelo Lineal Múltiple") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(5, color = ifelse(sfit$coefficients[,4] < 0.05, "#27AE60", "black"), bold = ifelse(sfit$coefficients[,4] < 0.05, TRUE, FALSE))
+```
+
+**Interpretación de los resultados: **
+
+Intercepto ($\beta_0$): El valor predicho del intercepto es 0.4219, siendo estadísticamente significativo (p-valor = 8.171e-03). Esto indica que, si todas las variables del modelo fuesen cero, la tasa base esperada de crímenes violentos sería de 0.4219.
+
+Por otro lado, al analizar la magnitud de los coeficientes, los factores que presentan un impacto estadísticamente significativo sobre la variable dependiente son PctKids2Par con un coeficiente de -0.6112 (p-valor = 2.592e-06), su impacto es el más fuerte y altamente significativo de todo el modelo. Por cada unidad que aumenta la proporción de niños en hogares biparentales, la tasa de crímenes violentos disminuye drásticamente en 0.6112 unidades, asumiendo que el resto de variables se mantienen constantes. Por otra parte NumStreet tiene un impacto positivo y significativo de 0.2769 (p-valor = 6.338e-04). A mayor presencia de personas sin hogar en las calles, mayor es la tasa de crímenes violentos registrada. Y por último PctUnemployed también muestra un efecto positivo y significativo estimado en 0.2715 (p-valor = 4.883e-03), confirmando que el desempleo actúa como un claro impulsor directo de la criminalidad.
+
+Efectos No Significativos: De forma muy clara, el modelo detecta que la tasa de divorcios (TotalPctDiv, p-valor = 3.451e-01) y el número de efectivos policiales (LemasSwFTPerPop, p-valor = 4.094e-01) no son estadísticamente significativos para este modelo. Esto nos sugiere que, una vez controlados el desempleo, el sinhogarismo y la estructura familiar, ni los divorcios a nivel general ni la cantidad de policías en las calles aportan una influencia demostrable estadísticamente sobre la variación de los crímenes violentos.
+
+**Intervalos de Confianza**
+
+```{r}
+# Calculamos los intervalos de confianza al 95%
+intervalos <- confint(modelo_final, level = 0.95)
+tabla_intervalos <- as.data.frame(intervalos)
+
+kable(tabla_intervalos, format = "html", align = "c", 
+      caption = "Intervalos de Confianza al 95% para los Coeficientes") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50")
+```
+
+Los intervalos de confianza confirman matemáticamente nuestras observaciones previas los predictores PctKids2Par, NumStreet y PctUnemployed no cruzan el cero, demostrando significancia estadística. En cambio, los intervalos de los divorcios (TotalPctDiv) y la presencia policial (LemasSwFTPerPop) sí incluyen el cero, confirmando de forma definitiva la falta de evidencia de que realmente influyan en el crimen en este modelo.
 
 
 

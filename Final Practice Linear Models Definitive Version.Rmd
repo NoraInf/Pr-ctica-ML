@@ -80,6 +80,7 @@ kable(resumen_integral, format = "html", align = "c", row.names = FALSE,
 ```
 
 ## Información Variables y Justificación de Elección
+
 En la tabla anterior, podemos ver un resumen de cada variable, así como unas primeras observaciones
 y el tipo de dato.
 
@@ -228,13 +229,103 @@ Un análisis del resumen estadístico revela varias conclusiones clave sobre la 
 
 * **Integridad de los Datos:** La columna NAs confirma que hay cero valores faltantes en este subconjunto refinado, lo que asegura una base sólida para las matrices de correlación y la regresión multivariante.
 
+## Análisis bivariante
 
+Por otro lado, conviene realizar un **análisis bivariante** entre la variable objetivo y el resto de variables, para ver cuáles tienen mayor relación lineal con nuestra variable respuesta y cuáles nos aportan información extra relevante.
 
+Para ellos, primero analizaremos la matriz de correlación simple y posteriormente la matriz de correlaciones parciales y las visualizaremos.
 
+### Correlaciones simples
 
+El primer paso es evaluar la relación lineal directa entre todas las variables. Esto nos ayuda a identificar los predictores más fuertes para `ViolentCrimesPerPop` y nos da una primera pista visual sobre posibles variables explicativas que estén muy correlacionadas entre sí.
 
+```{r correlaciones_simples, warning=FALSE, message=FALSE, echo=FALSE}
+library(corrplot)
+library(knitr)
+library(kableExtra)
 
+# Calculamos la matriz de correlación de Pearson
+cor_matrix <- cor(datos_modelo)
 
+# Extraemos y ordenamos la correlación específica con la variable objetivo
+cor_target <- cor_matrix[, "ViolentCrimesPerPop"]
+cor_target_sorted <- sort(cor_target, decreasing = TRUE)
+
+# 1. Transformamos los resultados a un data.frame para formatearlo
+df_cor_simple <- data.frame(
+  Variable = names(cor_target_sorted),
+  Correlacion = round(cor_target_sorted, 3)
+)
+
+# Eliminamos la fila donde la variable se compara consigo misma (dará 1)
+df_cor_simple <- df_cor_simple[df_cor_simple$Variable != "ViolentCrimesPerPop", ]
+
+# 2. Generamos la tabla con kable (estética Data Solutions)
+kable(df_cor_simple, format = "html", align = "c", row.names = FALSE,
+      caption = "Correlaciones Simples con ViolentCrimesPerPop") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  # Coloreamos las correlaciones: si son positivas, un tono; si son negativas, otro (opcional, pero queda genial)
+  column_spec(2, color = ifelse(df_cor_simple$Correlacion > 0, "#C0392B", "#2980B9"), bold = TRUE)
+
+# 3. Visualizamos la matriz completa (se queda igual)
+corrplot(cor_matrix, 
+         method = "color", 
+         type = "upper", 
+         tl.col = "black", 
+         tl.cex = 0.6,
+         addCoef.col = NULL,
+         diag = FALSE)
+```
+
+**Conclusiones de correlaciones simples: **
+
+En la tabla de correlación simple con nuestra variable objetivo ViolentCrimesPerPop, observamos que la inmigración reciente (PctRecentImmig), el condado (county) y el porcentaje de oficiales (LemasPctOfficDrugUn) asignados a la unidad de drogas casi no tienen correlación alguna con los crímenes violentos.
+
+Por otro lado vemos que el porcentaje de personas que viven en pobreza (PctPopUnderPov) y de desempleados (PctUnemployed), así como de divorcios en general (FemalePctDiv, TotalPctDiv, MalePctDivorce) tienen una correlación positiva elevada, que indica que una mala situación personal o familiar puede resultar en violencia. Además, el porcentaje de niños y adolescentes que viven con sus dos padres juntos (PctKids2Par y PctTeen2Par respectivamente) tienen una correlación negativa muy elevada, lo que indica que actúan como un fuerte factor de protección frente a la criminalidad.
+
+**Primer vistazo de la multicolinealidad: **
+
+Al observar el gráfico de correlaciones simples completo y centrándonos en los tonos azul y rojo oscuros, detectamos alta colinealidad entre ciertas variables. Por ejemplo las tres métricas de divorcio están altamente correlacionadas entre sí, al igual que los indicadores de estructura familiar y las variables económicas (como la relación inversa entre la pobreza y los ingresos medios). Esto nos advierte, de que varios de estos predictores nos proporcionan información redundante, por lo tanto, es indispensable aplicar técnicas de diagnóstico para evitar que la redundancia desestabilice nuestro modelo.
+
+### Correlaciones parciales
+
+```{r correlaciones_parciales, warning=FALSE, message=FALSE, echo=FALSE}
+library(ggm)
+library(knitr)
+library(kableExtra)
+
+cov_matrix <- cov(datos_modelo)
+partial_cor_matrix <- parcor(cov_matrix)
+
+partial_cor_target <- partial_cor_matrix[, "ViolentCrimesPerPop"]
+partial_cor_target_sorted <- sort(partial_cor_target, decreasing = TRUE)
+
+df_cor_parcial <- data.frame(
+  Variable = names(partial_cor_target_sorted),
+  Correlacion_Parcial = round(partial_cor_target_sorted, 3)
+)
+
+df_cor_parcial <- df_cor_parcial[df_cor_parcial$Variable != "ViolentCrimesPerPop", ]
+
+kable(df_cor_parcial, format = "html", align = "c", row.names = FALSE,
+      caption = "Correlaciones Parciales con ViolentCrimesPerPop") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(2, color = ifelse(df_cor_parcial$Correlacion_Parcial > 0, "#C0392B", "#2980B9"), bold = TRUE)
+```
+
+**Conclusiones de correlaciones parciales: **
+
+Al aislar el efecto único de cada predictor, observamos una caída drástica en todas las correlaciones en comparación con el análisis simple. Este resultado confirma nuestra sospecha visual anterior, es decir que existe un alto grado de multicolinealidad en el conjunto de datos, lo que significa que muchas de estas métricas socioeconómicas comparten información redundante y explican el mismo comportamiento subyacente.
+
+A pesar de esta reducción, el análisis muestra los verdaderos motores de la criminalidad en las comunidades. El desempleo (PctUnemployed) y las personas sin hogar (NumStreet) destacan como los principales impulsores directos de la violencia, mientras que mantener un hogar con ambos padres (PctKids2Par, PctTeen2Par) se reafirma como el mayor escudo protector. Resulta especialmente revelador que la pobreza (PctPopUnderPov) pierda su impacto estadístico al aislarla, demostrando que no genera crimen por sí sola, sino a través de las condiciones de precariedad laboral y ruptura familiar que normalmente la acompañan.
+
+También vemos otras situaciones reveladoras como las situaciones familiares o personales, sean los divorcios o inmigración reciente, pierden su importancia.
 
 
 

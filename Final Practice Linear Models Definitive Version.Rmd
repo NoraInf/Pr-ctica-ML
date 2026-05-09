@@ -5,7 +5,7 @@ output: pdf_document
 
 ---
 
-```{r setup, include=FALSE,warning=FALSE}
+```{r setup, include=FALSE,warnings=FALSE, message = False}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -412,6 +412,71 @@ kable(tabla_intervalos, format = "html", align = "c",
 ```
 
 Los intervalos de confianza confirman matemáticamente nuestras observaciones previas los predictores PctKids2Par, NumStreet y PctUnemployed no cruzan el cero, demostrando significancia estadística. En cambio, los intervalos de los divorcios (TotalPctDiv) y la presencia policial (LemasSwFTPerPop) sí incluyen el cero, confirmando de forma definitiva la falta de evidencia de que realmente influyan en el crimen en este modelo.
+
+**Recomendaciones Estratégicas: **
+
+Asumiendo que el resto de variables se mantienen constantes (ceteris paribus), las decisiones estratégicas para reducir la criminalidad deben centrarse en los predictores significativos. En primer lugar, conviene aumentar la proporción de familias biparentales (PctKids2Par), ya que su coeficiente negativo y de alta precisión (-0.6112) tiene un fuerte efecto preventivo, lo que justifica invertir en políticas de ayuda y conciliación familiar.
+
+Por el contrario, se deben reducir el sinhogarismo (NumStreet, 0.2769) y el desempleo (PctUnemployed, 0.2715), invirtiendo en la inserción laboral y la red de vivienda social, pues son los claros impulsores del crimen. Finalmente, dado que el volumen de efectivos policiales carece de significatividad estadística, recomendamos aumentar la eficacia del despliegue de seguridad actual en lugar de simplemente aumentar el número de agentes, priorizando la inversión en las variables socioeconómicas mencionadas anteriormente.
+
+La magnitud de impacto preventivo de familias biparentales es mayor que el sinhogarismo y el desempleo, pero no por ello hay que dejar de invertir las dos últimas, pues siguen teniendo maginitudes importantes. 
+
+# Evaluación de la Bondad de Ajuste
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

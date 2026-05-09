@@ -327,8 +327,30 @@ A pesar de esta reducción, el análisis muestra los verdaderos motores de la cr
 
 También vemos otras situaciones reveladoras como las situaciones familiares o personales, sean los divorcios o inmigración reciente, pierden su importancia.
 
+## Selección de Variables Explicativas
 
+Como paso previo al ajuste del modelo, es fundamental justificar la selección de las variables explicativas basándonos en las matrices de correlación calculadas.
 
+En primer lugar, exigimos que los predictores presenten una relación lineal apreciable con la variable dependiente. Por este motivo, descartamos de entrada aquellas métricas que mostraron una asociación casi nula en el análisis simple, como la inmigración reciente (PctRecentImmig), el código de territorio (county) y el porcentaje de agentes en la unidad de drogas (LemasPctOfficDrugUn).
+
+En segundo lugar, para garantizar la estabilidad matemática del modelo, debemos evitar la alta multicolinealidad descartando variables que aportan información redundante. Al observar las correlaciones parciales, detectamos un fuerte solapamiento entre los indicadores socioeconómicos. Por ello, de las variables de precariedad (PctPopUnderPov, medIncome, PctUnemployed), conservaremos únicamente PctUnemployed, ya que demostró ser el verdadero impulsor directo de la criminalidad al aislar su efecto. Siguiendo esta misma lógica con la estructura familiar, priorizaremos PctKids2Par sobre PctTeen2Par al ser el factor protector estadísticamente más robusto, y retendremos TotalPctDiv como la métrica más representativa para la ruptura familiar, descartando aquella tasas divididas por género.
+
+Finalmente, evaluamos los factores urbanos y de seguridad. Conservamos NumStreet intacta, dado que el número de personas sin techo aporta información única e independiente que no va disminuyendo frente a otros factores. En cuanto a las fuerzas de la policía, mantendremos el tamaño del cuerpo policial (LemasSwFTPerPop), pero excluiremos el presupuesto operativo (PolicOperBudg) y el nivel de demanda de los ciudadanos (LemasTotReqPerPop) por su redundancia matemática con el número de unidades efectivas disponibles.
+
+De este modo, hemos conseguido reducir la dimensionalidad para evitar inestabilidades en las varianzas de los coeficientes en el futuro, proponiendo entonces, un modelo de regresión múltiple parsimonioso compuesto por seis variables explicativas definitivas: PctKids2Par, PctUnemployed, TotalPctDiv, NumStreet, LemasSwFTPerPop y LemasTotReqPerPop.
+
+```{r}
+variables_finales <- c(
+  "ViolentCrimesPerPop",
+  "PctKids2Par",
+  "PctUnemployed",
+  "TotalPctDiv",
+  "NumStreet",
+  "LemasSwFTPerPop"
+)
+
+datos_modelo_final <- datos_modelo[, variables_finales]
+```
 
 
 

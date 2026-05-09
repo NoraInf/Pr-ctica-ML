@@ -1,0 +1,454 @@
+---
+title: "Consultoría estratégica: Crímenes Violentos"
+author: "Data Solutions"
+output:
+  pdf_document: 
+    latex_engine: pdflatex
+    keep_tex: false
+urlcolor: blue
+linkcolor: blue
+always_allow_html: true
+---
+
+```{r setup, include=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Consultoría Propuesta
+
+Uno de los aspectos que más preocupan a los ciudadanos, es su seguridad. Queremos
+ser capaces de poder ir por donde queramos, cuando queramos, sin que haya riesgo de
+que alguien salga perjudicado. Es por este motivo que presentamos una base de datos
+dedicada a los crímenes violentos, y el estudio de sus posibles causas. Dicha base
+de datos es "Communities and Crime"[^1].
+
+La elección de esta base de datos se justifica plenamento debido a que recopila datos
+reales del censo estadounidense de 1990, el informe de crímenes reportados del FBI de
+1995 y del estudio de estadísticas administrativas y del uso de la ley de 1990. Esta
+base de datos fue creada por Michael Redmon.
+
+Además, es de alto valor para el cliente porque traduce toda la complejidad númerica en decisiones estratégicas
+claras. Al identificar que factores tienen un impacto real en los crímenes violentos, el cliente podrá optimizar su
+inversión en recursos y predecir el efecto de futuras políticas socioeconómicas.
+
+# Estudio de las variables
+
+## Visualización preliminar
+Antes de profundizar en el código, debemos hacer un análisis preliminar de nuestras
+variables, esto nos permitirá seleccionar un subconjunto de mayor interés de las 
+mismas.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(purrr)
+
+#Leemos el archivo .names para extraer los nombres de las columnas
+lineas_texto <- readLines("communities.names")
+
+#Buscamos las líneas que contienen "@attribute"
+lineas_atributos <- grep("@attribute", lineas_texto, value = TRUE)
+
+#Limpiamos el texto para quedarnos solo con el nombre de la variable
+#Esto quita la palabra "@attribute" y el tipo de dato (numeric, string, etc.)
+nombres_columnas <- gsub("@attribute ", "", lineas_atributos)
+nombres_columnas <- gsub(" .*", "", nombres_columnas)
+
+#Cargamos el archivo de datos
+datos <- read.csv("communities.data", header = FALSE, na.strings = "?")
+
+colnames(datos) <- nombres_columnas
+
+#Ahora lo mostramos de forma bonita
+resumen_integral <- datos %>%
+  map_df(~ {
+    es_num <- is.numeric(.x)
+    data.frame(
+      Tipo = class(.x)[1],
+      Primeras_3_Obs = paste(head(.x, 3), collapse = " | "),
+      NAs = sum(is.na(.x))
+    )
+  }, .id = "Variable")
+
+resumen_integral[is.na(resumen_integral)] <- "-"
+
+resumen_integral <- head(resumen_integral, 10)
+
+kable(resumen_integral, format = "latex", align = "c", row.names = FALSE,
+      caption = "Análisis Exploratorio Integral: Todas las Variables (Numéricas y Categóricas)") %>%
+  kable_styling(latex_options = c("striped", "repeat_header"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(2, color = "#E67E22", bold = TRUE) %>%
+  column_spec(3, italic = TRUE)
+```
+Debido a la gran dimensionalidad del conjunto de datos (128 variables), el análisis exploratorio integral se ha exportado a un documento externo para facilitar la lectura[^2]. 
+
+
+
+## Información Variables y Justificación de Elección
+En la tabla anterior, podemos ver un resumen de cada variable, así como unas primeras observaciones
+y el tipo de dato.
+
+Debido al alto número de variables, hemos seleccionado un subconjunto de 18 variables, que creemos serán
+de mayor interés para el estudio.
+
+A continuación, presento la información detallada de cada una:
+
+## Variable Dependiente (Objetivo)
+
+* **ViolentCrimesPerPop: **Número total de crímenes violentos por cada cien mil habitantes. Esta es nuestra variable de mayor interés.
+
+## Variables Explicativas
+
+### Variables Identificadoras
+
+* **county: **Código numérico por condado (Esta no es predictiva pero nos sirve para un estudio más denso o detectar motivos ocultos).
+
+### Variables del Uso de la Ley
+
+* **LemasPctOfficDrugUn: **Porcentaje de oficiales asignados a la unidad de drogas. Nos interesa mucho, pues las drogas causan relaciones violentas en los individuos.
+
+* **PolicOperBudg: **Presupuesto operativo de la policía. Muy interesante, pues es veremos si más policías significan menos crímenes.
+
+* **PolicAveOTWorked: **Media de tiempo extra (o fuera de horario de contrato) trabajado.
+
+* **LemasTotReqPerPop: **Total de veces que se ha solicitado a la policía por cada cien mil personas.
+
+* **LemasSwFTPerPop: **Número de oficiales de la policia por cada cien mil habitantes.
+
+### Variables de Situación Familiar
+
+* **MalePctDivorce: **Porcentaje de individuos de género masculino que están divorciados. A veces los divorcios se realizan debido a situaciones violentas por parte del hombre.
+
+* **FemalePctDiv: **Porcentaje de individuos de género femenino que están divorciadas.
+
+* **TotalPctDiv: **Porcentaje de la población que está divorciada. Muchas de las situaciones violentas resultan en divorcio, es muy importante.
+
+* **PctKids2Par: **Porcentaje de niños que viven con sus dos padres. Esta variable puede presentar una correlación negativa con la variable dependiente, ya que a mejor siytuación familiar, menor riesgo hay de tensiones en la familia que desemboquen en violencia doméstica..
+
+* **PctTeen2Par: **Porcentaje de niños de 12-17 años de edad que viven conjuntamente con sus padres (en la misma casa).
+
+### Variables Económicas
+En general todas las siguientes creemos que influyen, pues normalmente, cuanto peor es la situación económica, más probabilidad hay de infelicidad y violencia, aunque lo analizaremos más adelante.
+
+* **medIncome: **Mediana de las ganancias por hogar. 
+
+* **PctPopUnderPov: **Porcentaje de personas por debajo de el nivel de pobreza.
+
+* **PctUnemployed: **Porcentaje de personas de 16 años o más, en trabajos forzados o desempleados.
+
+* **RentLowQ: **Cuartil 25 del coste de la renta.
+
+* **MedRent: **Mediana de la renta bruta.
+
+### Variables Sociales
+
+* **PctRecentImmig: **Porcentaje de la población que ha inmigrado en los últimos 3 años. En algunas ocasiones, puede influir el descontento o choque de culturas al principio.
+
+* **NumStreet: **Número de personas sin hogar contadas en las calles. Muy importante para nuestro estudio.
+
+Todas las variables presentadas son numéricas, el dataset no contiene variables categóricas de interés con las que construir un modelo anova o ancova tras nuestro regresión múltiple lineal.
+
+## Objetivo del estudio
+
+El objetivo principal es predecir el número de crímenes violentos por cada cien mil habitantes mediante un modelo de regresión lineal múltiple. Los resultados permitirán al cliente apoyar decisiones estratégicas basadas en evidencia estadística,
+así como optimizar el gasto público en seguridad o diseñar nuevas propuestas para mejorar el sistema actual.
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# 1. Cargamos las librerías necesarias
+library(tidyr)  
+
+variables_modelo <- c(
+"ViolentCrimesPerPop", # la variable dependiente a predecir
+"medIncome", #
+"PctPopUnderPov", #
+"PctUnemployed", #
+"MalePctDivorce", #
+"PctKids2Par", #
+"PctTeen2Par", #
+"PctRecentImmig", #
+"MedRent", #
+"NumStreet", #
+"LemasSwFTPerPop", 
+"LemasPctOfficDrugUn", #
+"PolicOperBudg", #
+"PolicAveOTWorked", #
+"LemasTotReqPerPop", #
+"RentLowQ", #
+"FemalePctDiv", #
+"TotalPctDiv",
+"county" #
+)
+
+# 2. Hacemos la selección y eliminamos las filas con NAs
+datos_modelo <- datos %>%
+  select(all_of(variables_modelo)) %>%
+  drop_na()
+```
+
+Antes de proceder, es importante no solamente saber la estructura interna de los datos o cómo se han almacenado, sino en un plano empírico, conocer su comportamiento en la vida real. Es decir, sería menester el **análisis univariante** de cada uno de los datos recopilados, para conocer su tendencia, dispersión y forma geométrica. El reconocimiento de patrones o ciertas tendencias pueden guiarnos para encontrar un diagnóstico acertado de las variables. De tal forma, garantizamos la correcta forma de trabajar con estos gracias a la identificación de **Outliers**, **Asimetría**, **Agrupación** y **Dispersión.**
+
+# Análisis Exploratorio de Datos
+
+## Análisis Univariante
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+resumen_integral <- datos_modelo %>%
+  map_df(~ {
+    es_num <- is.numeric(.x)
+    data.frame(
+      Tipo = class(.x)[1],
+      Minimo = if(es_num) round(min(.x, na.rm = TRUE), 2) else NA,
+      Q1 = if(es_num) round(quantile(.x, 0.25, na.rm = TRUE), 2) else NA,
+      Mediana = if(es_num) round(median(.x, na.rm = TRUE), 2) else NA,
+      Media = if(es_num) round(mean(.x, na.rm = TRUE), 2) else NA,
+      Q3 = if(es_num) round(quantile(.x, 0.75, na.rm = TRUE), 2) else NA,
+      Maximo = if(es_num) round(max(.x, na.rm = TRUE), 2) else NA,
+      NAs = sum(is.na(.x))
+    )
+  }, .id = "Variable")
+
+resumen_integral[is.na(resumen_integral)] <- "-"
+
+kable(resumen_integral, format = "latex", longtable = TRUE, align = "c", row.names = FALSE,
+      caption = "Análisis Exploratorio Integral: Todas las Variables (Numéricas y Categóricas)") %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "hold_position"), 
+                full_width = FALSE, # <-- ¡Este es el cambio clave!
+                font_size = 7) %>% 
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE, width = "3cm") %>% 
+  column_spec(2, color = "#E67E22", bold = TRUE, width = "1.5cm") %>% 
+  column_spec(3, italic = TRUE, width = "4cm") %>% # Obliga al texto largo a saltar de línea
+  column_spec(4:10, width = "1cm")
+```
+
+**Conclusiones: **
+
+Un análisis del resumen estadístico revela varias conclusiones clave sobre la distribución de las variables:
+
+* **Normalización de Datos:** Todas las variables presentan un mínimo de 0.00 y un máximo de 1.00. Esto confirma que el conjunto de datos ha sido prenormalizado, estableciendo una escala uniforme que evitará que las variables con números absolutos más grandes dominen de manera desproporcionada el modelo de regresión posterior. Esto es ideal para nuestro estudio.
+
+* **Asimetría de la Variable Objetivo:** La variable dependiente, ViolentCrimesPerPop, muestra una media (0.39) que es mayor a su mediana (0.32). Esto indica una distribución asimétrica hacia la derecha. Es decir, la mayoría de las comunidades experimentan tasas más bajas de violencia, mientras que un subconjunto más pequeño sufre de condiciones de alta criminalidad que llevan el promedio hacia arriba.
+
+* **Valores Atípicos Extremos:** Variables como NumStreet y PolicOperBudg demuestran una asimetría extrema hacia la derecha. Ambas poseen una mediana muy baja (0.01 y 0.02) pero alcanzan un máximo de 1.00. Este patrón sugiere que el número de personas sin hogar y los presupuestos operativos de la policía están altamente concentrados en unas pocas áreas específicas, en lugar de distribuirse uniformemente entre las comunidades.
+
+* **Integridad de los Datos:** La columna NAs confirma que hay cero valores faltantes en este subconjunto refinado, lo que asegura una base sólida para las matrices de correlación y la regresión multivariante.
+
+## Análisis bivariante
+
+Por otro lado, conviene realizar un **análisis bivariante** entre la variable objetivo y el resto de variables, para ver cuáles tienen mayor relación lineal con nuestra variable respuesta y cuáles nos aportan información extra relevante.
+
+Para ellos, primero analizaremos la matriz de correlación simple y posteriormente la matriz de correlaciones parciales y las visualizaremos.
+
+### Correlaciones simples
+
+El primer paso es evaluar la relación lineal directa entre todas las variables. Esto nos ayuda a identificar los predictores más fuertes para `ViolentCrimesPerPop` y nos da una primera pista visual sobre posibles variables explicativas que estén muy correlacionadas entre sí.
+
+
+```{r correlaciones_simples, warning=FALSE, message=FALSE, echo=FALSE}
+library(corrplot)
+library(knitr)
+library(kableExtra)
+
+# Calculamos la matriz de correlación de Pearson
+cor_matrix <- cor(datos_modelo)
+
+# Extraemos y ordenamos la correlación específica con la variable objetivo
+cor_target <- cor_matrix[, "ViolentCrimesPerPop"]
+cor_target_sorted <- sort(cor_target, decreasing = TRUE)
+
+# 1. Transformamos los resultados a un data.frame para formatearlo
+df_cor_simple <- data.frame(
+  Variable = names(cor_target_sorted),
+  Correlacion = round(cor_target_sorted, 3)
+)
+
+# Eliminamos la fila donde la variable se compara consigo misma (dará 1)
+df_cor_simple <- df_cor_simple[df_cor_simple$Variable != "ViolentCrimesPerPop", ]
+
+# 2. Generamos la tabla con kable (estética Data Solutions)
+kable(df_cor_simple, format = "latex", align = "c", row.names = FALSE,
+      caption = "Correlaciones Simples con ViolentCrimesPerPop") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  # Coloreamos las correlaciones: si son positivas, un tono; si son negativas, otro (opcional, pero queda genial)
+  column_spec(2, color = ifelse(df_cor_simple$Correlacion > 0, "#C0392B", "#2980B9"), bold = TRUE)
+
+# 3. Visualizamos la matriz completa (se queda igual)
+corrplot(cor_matrix, 
+         method = "color", 
+         type = "upper", 
+         tl.col = "black", 
+         tl.cex = 0.6,
+         addCoef.col = NULL,
+         diag = FALSE)
+```
+
+**Conclusiones de correlaciones simples: **
+
+En la tabla de correlación simple con nuestra variable objetivo ViolentCrimesPerPop, observamos que la inmigración reciente (PctRecentImmig), el condado (county) y el porcentaje de oficiales (LemasPctOfficDrugUn) asignados a la unidad de drogas casi no tienen correlación alguna con los crímenes violentos.
+
+Por otro lado vemos que el porcentaje de personas que viven en pobreza (PctPopUnderPov) y de desempleados (PctUnemployed), así como de divorcios en general (FemalePctDiv, TotalPctDiv, MalePctDivorce) tienen una correlación positiva elevada, que indica que una mala situación personal o familiar puede resultar en violencia. Además, el porcentaje de niños y adolescentes que viven con sus dos padres juntos (PctKids2Par y PctTeen2Par respectivamente) tienen una correlación negativa muy elevada, lo que indica que actúan como un fuerte factor de protección frente a la criminalidad.
+
+**Primer vistazo de la multicolinealidad: **
+
+Al observar el gráfico de correlaciones simples completo y centrándonos en los tonos azul y rojo oscuros, detectamos alta colinealidad entre ciertas variables. Por ejemplo las tres métricas de divorcio están altamente correlacionadas entre sí, al igual que los indicadores de estructura familiar y las variables económicas (como la relación inversa entre la pobreza y los ingresos medios). Esto nos advierte, de que varios de estos predictores nos proporcionan información redundante, por lo tanto, es indispensable aplicar técnicas de diagnóstico para evitar que la redundancia desestabilice nuestro modelo.
+
+### Correlaciones parciales
+
+```{r correlaciones_parciales, warning=FALSE, message=FALSE, echo=FALSE}
+library(ggm)
+library(knitr)
+library(kableExtra)
+
+cov_matrix <- cov(datos_modelo)
+partial_cor_matrix <- parcor(cov_matrix)
+
+partial_cor_target <- partial_cor_matrix[, "ViolentCrimesPerPop"]
+partial_cor_target_sorted <- sort(partial_cor_target, decreasing = TRUE)
+
+df_cor_parcial <- data.frame(
+  Variable = names(partial_cor_target_sorted),
+  Correlacion_Parcial = round(partial_cor_target_sorted, 3)
+)
+
+df_cor_parcial <- df_cor_parcial[df_cor_parcial$Variable != "ViolentCrimesPerPop", ]
+
+kable(df_cor_parcial, format = "latex", align = "c", row.names = FALSE,
+      caption = "Correlaciones Parciales con ViolentCrimesPerPop") %>%
+  kable_styling(latex_options = c("striped", "repeat_header"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(2, color = "#E67E22", bold = TRUE)
+```
+
+
+**Conclusiones de Correlacoines Parciales: **
+
+Tras la realización de las correlaciones parciales, observamos una caída drástica en el efecto que tenían todas las variables respecto a la variable dependiente. Este resulytado confirma un alto grado de multicolinealidad, al asumir que varios conjuntos de variables están relacionadas de forma muy fuerte. En definitiva, muchas de estas métricas socioeconómicas comparten información redundante y explican el mismo comportamiento subyacente. Por ejemplo, para las métricas que describen el porcentaje de divorciados hay una clara relación, en el sentido de que el procentaje total de los divorciados (**TotalPctDvr**) es básicamente la suma de los subgrupos de divorciados de hombres y mujeres (**MalePctDrv**, **FemalePctDivorce ** respectivamente), pro lo que no añaden anda de información nueva, una se pueda explicar con las dos restantes. Esto se ve reflejado en la pérdida de la correlación de estas dos últimas métricas, que incluso paran a tener un efecto negativo.
+
+A pesar de esta reducción, el análisis muestra los verdaderos motores de la criminalidad en las comunidades. El desempleo (**PctUnemployed**) y las personas sin hogar (**NumStreet**) destacan cómo los principales desencadenantes de la violencia registrada (encontramos una correlación positiva), mientras que lo contarrio pasa con las variables que describen los hogares estables (**PctKids2Par**, **PctTeen2Par**). A mayor porcentaje de hijos que viven sin padres divorciados, menores parecen ser los registros de violencia en aquel condado. Por otra parte, identificamos que la pobreza (**PctPopUnderPov**) pierde su impacto estadístico al ser aislada, demostrando que es la mezcla de factores cómo las condiciones de precariedad laboral y desentendimientos familiares (cómo pueden ser los divorcios) junto con la mencionada, los que realmente aumente la esposición al estrés, y por ende los casos de violencia.
+
+Finalemnete, vemos que esto no solamente pasa con la pobreza, sino factores cómo el porcentaje de inmigración reciente pierden su importancia.
+
+
+## Selección de Variables Explicativas
+
+Tras los datos observados de las relaciones simples y parciales, razonaremos que factores socioeconómicos tienen más relevancia para determinar los caasos de violencia registrado en un condado determinado. Para nustro estudio, recopilaremos los **predictores que presenten una relación lineal** lo más apreciable posible.
+
+Las variables que demuestan un coeficiente de correlación de Pearson más bajo que el resto, están representadas por facotes cómo la inmigración (PctRecentImmig), el código de territorio (county) y el porcentaje de agentes adheridos a la unidad de drogas (LemasPctOfficDrugUn). En estos caso, podemos detectar un Coeficiente de Correlación Parcial bastante pequeño, en todos los casos tenemos que $|\rho| < 0.1$.
+
+Como hemos mencionado antes, los resultado del test de Correlación Parcial frente al Simples son mucho menores, cómo por ejemplo, para las variables *TotalPctDiv* y *FemalePctDiv*, las cuales han bajado de **0.661** a valores muy inferiores, incluso en el caso de FemalePctDiv, pasando a tener una correlación negativa. Este es un claro ejemplo de **Multicolinealidad**, muchos de estos factores no aportan información nueva, ya que describen cosas muy parecidas. Osea, a pesar de que sus Correlaciones con la variabe independiente fueran altas, debemos de determinar la dependencia que tienen las variables explicativas entre ellas, para optar por un modelo lo más optimizado posible eliminando cualquier redundancia.
+
+Siguiendo por el ejemplo de los divorcios, tras el último estudio, nos quedamos con un $\rho = 0.112$. Para solucionar esto, nos quedaríamos con una de las variables tres vaariables que explican lo misma, y cómo la tasa total del divorcio en nuestro estudio consta del valor más alto, nos quedaríamos con la columna **TotalPctDiv**. 
+
+Pasemos a a las variables que representan el **estado socioeconómico** del condado, en concreto las variables **PctPopUnderPov**, **medIncome**, **PctUnemployed**,  conservaremos únicamente **PctUnemployed**, ya que demostró ser el verdadero impulsor directo de la criminalidad al aislar su efecto $\rho = 0.247$, siendo el mayor de toda la simulación. Suguiendo con el resto de efecto, los que corresponden al *Uso de la Ley* son grandes candidatos determinísticos para los casos de violencia por población, ya que cómo es de esperar, a más efecto policiales, más seguridad por las calles y viceversa. En este aspecto optamos por el *tamaño del cuerpo policial* (**LemasSwFTPerPop**), ya que cómo con la variable anterior, mantiene una alta colinealidad con las variables del mismo tipo. De este modo, excluiríamos de nuestro modelo a al presupuesto operativo (**PolicOperBudg**) y el nivel de demanda de los ciudadanos (**LemasTotReqPerPop**).
+
+Finalmente y para cabar con la selección del motor del modelo, nos queda uno de los factores que parece reducir nuestra varriable dependiente, teniendo un efecto negativo sobre esta. Parece ser que los hijos de padres que viven en una misma unidad doméstica determina la reducción de casos de violencia doméstica. Nos quedaríamos con la variable más fuerte que representa el conjunto total de los datos, **PctKids2Par**, ya que su hermana **PctTeens2Par** es solamente un subconjunto de la misma, y la redundancia en este caso está más que clara.
+
+De este modo, hemos conseguido reducir la dimensionalidad para evitar inestabilidades en las varianzas de los coeficientes en el futuro, proponiendo entonces, un modelo de regresión múltiple parsimonioso compuesto por seis variables explicativas definitivas: PctKids2Par, PctUnemployed, TotalPctDiv, NumStreet, LemasSwFTPerPop y LemasTotReqPerPop.
+```{r correlaciones_parciales, warning=FALSE, message=FALSE, echo=FALSE} 
+variables_finales <- c(
+  "ViolentCrimesPerPop",
+  "PctKids2Par",
+  "PctUnemployed",
+  "TotalPctDiv",
+  "NumStreet",
+  "LemasSwFTPerPop"
+)
+
+datos_modelo_final <- datos_modelo[, variables_finales]
+```
+
+
+# Ajuste del modelo e Inferencia
+
+En base a la selección de variables previa, proponemos un modelo de Regresión Lineal Múltiple para predecir la tasa de crímenes violentos. El modelo teórico poblacional se especifica mediante la siguiente ecuación:
+
+$$ViolentCrimesPerPop = \beta_0 + \beta_1 PctKids2Par + \beta_2 PctUnemployed + \beta_3 TotalPctDiv + \beta_4 NumStreet + \beta_5 LemasSwFTPerPop + \epsilon$$
+Donde:
+
+$\beta_0$ representa el intercepto.
+
+$\beta_1, ..., \beta_5$ son los coeficientes parciales de regresión que miden el cambio en la variable dependiente por cada unidad de cambio en la variable independiente correspondiente.
+
+$\epsilon$ es el término de error aleatorio, asumiendo $\epsilon \sim N(0, \sigma^2)$.
+
+```{r ajuste_modelo, warning=FALSE, message=FALSE, echo=FALSE}
+# Ajustamos el modelo lineal múltiple con las variables definitivas
+modelo_final <- lm(ViolentCrimesPerPop ~ PctKids2Par + PctUnemployed + TotalPctDiv + NumStreet + LemasSwFTPerPop, data = datos_modelo_final)
+
+# Extraemos los principales resultados (coeficientes y significatividad)
+sfit <- summary(modelo_final)
+tabla_coef <- as.data.frame(sfit$coefficients)
+
+colnames(tabla_coef) <- c("Estimación", "Error Estándar", "Valor t", "P-valor")
+
+tabla_coef$Estimación <- round(tabla_coef$Estimación, 4)
+tabla_coef$`Error Estándar` <- round(tabla_coef$`Error Estándar`, 4)
+tabla_coef$`Valor t` <- round(tabla_coef$`Valor t`, 4)
+
+tabla_coef$`P-valor` <- formatC(tabla_coef$`P-valor`, format = "e", digits = 3)
+
+kable(tabla_coef, format = "latex", align = "c", 
+      caption = "Resumen de Coeficientes del Modelo Lineal Múltiple") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(5, color = ifelse(sfit$coefficients[,4] < 0.05, "#27AE60", "black"), bold = ifelse(sfit$coefficients[,4] < 0.05, TRUE, FALSE))
+```
+
+**Interpretación de los resultados: **
+
+  * **Intercepto** ($\beta_0$): El valor predicho del intercepto es **0.4219**, siendo *estadísticamente significativo* (**p-valor = 8.171e-03**). Esto indica que, *si todas las variables del modelo fuesen cero*, la tasa base esperada de crímenes violentos sería de 0.4219.
+
+Tras analizar la magnitud de los coeficientes, los **factores que presentan un impacto estadísticamente significativo** sobre la variable dependiente son **PctKids2Par** con un coeficiente de -0.6112 (p-valor = **2.592e-06**), su impacto es el más fuerte y altamente significativo de todo el modelo. Por cada unidad que *aumenta la proporción de niños en hogares biparentales*, la tasa de *crímenes violentos disminuye* drásticamente en 0.6112 unidades, asumiendo que el resto de variables se mantienen constantes. Por otra parte **NumStreet** tiene un impacto positivo y significativo de 0.2769 (p-valor = **6.338e-04**). A *mayor presencia de personas sin hogar* en las calles, *mayor es la tasa de crímenes* violentos registrada. Y por último **PctUnemployed** también muestra un efecto positivo y significativo estimado en 0.2715 (p-valor = **4.883e-03**), confirmando que el desempleo actúa como un claro impulsor directo de la criminalidad.
+
+**Efectos No Significativos**: De forma muy clara, el modelo detecta que la tasa de divorcios (**TotalPctDiv**, p-valor = 3.451e-01) y el número de efectivos policiales (**LemasSwFTPerPop**, p-valor = 4.094e-01) *no son estadísticamente significativos* para este modelo. Esto nos sugiere que, una vez controlados el desempleo, el sinhogarismo y la estructura familiar, ni los divorcios a nivel general ni la cantidad de policías en las calles aportan una influencia demostrable estadísticamente sobre la variación de los crímenes violentos.
+
+**Intervalos de Confianza**
+
+```{r intervalos_confianza, warning=FALSE, message=FALSE, echo=FALSE}
+# Calculamos los intervalos de confianza al 95%
+intervalos <- confint(modelo_final, level = 0.95)
+tabla_intervalos <- as.data.frame(intervalos)
+
+kable(tabla_intervalos, format = "latex", align = "c", 
+      caption = "Intervalos de Confianza al 95% para los Coeficientes") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50")
+```
+
+Los intervalos de confianza confirman matemáticamente nuestras observaciones previas los predictores PctKids2Par, NumStreet y PctUnemployed **no cruzan el cero**, demostrando *significancia estadística*. En cambio, los intervalos de los **divorcios** (TotalPctDiv) y la **presencia policial** (LemasSwFTPerPop) sí **incluyen el cero**, confirmando de forma definitiva la *falta de evidencia de que realmente influyan* en el crimen en este modelo.
+
+
+**Recomendaciones Estratégicas: **
+
+Asumiendo que el resto de variables se mantienen constantes (ceteris paribus), las decisiones estratégicas para reducir la criminalidad deben centrarse en los predictores significativos. En primer lugar, conviene aumentar la proporción de familias biparentales (PctKids2Par), ya que su coeficiente negativo y de alta precisión (-0.6112) tiene un fuerte efecto preventivo, lo que justifica invertir en políticas de ayuda y conciliación familiar.
+
+Por el contrario, se deben reducir el sinhogarismo (NumStreet, 0.2769) y el desempleo (PctUnemployed, 0.2715), invirtiendo en la inserción laboral y la red de vivienda social, pues son los claros impulsores del crimen. Finalmente, dado que el volumen de efectivos policiales carece de significatividad estadística, recomendamos aumentar la eficacia del despliegue de seguridad actual en lugar de simplemente aumentar el número de agentes, priorizando la inversión en las variables socioeconómicas mencionadas anteriormente.
+
+La magnitud de impacto preventivo de familias biparentales es mayor que el sinhogarismo y el desempleo, pero no por ello hay que dejar de invertir las dos últimas, pues siguen teniendo maginitudes importantes. 
+
+[^1]: Enlace de Referéncia: https://archive.ics.uci.edu/dataset/183/communities+and+crime
+[^2]: Haz clic aquí para visualizar el resumen completo de las variables: https://drive.google.com/file/d/1WrsFtFY3zNsvuFvzZ2tWkxx_d-aRj-G2/view?usp=sharing
+
+
+
+
+
+
+
+
+
+
+
+
+

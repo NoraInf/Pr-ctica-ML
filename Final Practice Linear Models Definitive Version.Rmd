@@ -218,6 +218,16 @@ kable(resumen_integral, format = "html", align = "c", row.names = FALSE,
 
 **Conclusiones: **
 
+Un análisis del resumen estadístico revela varias conclusiones clave sobre la distribución de las variables:
+
+* **Normalización de Datos:** Todas las variables presentan un mínimo de 0.00 y un máximo de 1.00. Esto confirma que el conjunto de datos ha sido prenormalizado, estableciendo una escala uniforme que evitará que las variables con números absolutos más grandes dominen de manera desproporcionada el modelo de regresión posterior. Esto es ideal para nuestro estudio.
+
+* **Asimetría de la Variable Objetivo:** La variable dependiente, ViolentCrimesPerPop, muestra una media (0.39) que es mayor a su mediana (0.32). Esto indica una distribución asimétrica hacia la derecha. Es decir, la mayoría de las comunidades experimentan tasas más bajas de violencia, mientras que un subconjunto más pequeño sufre de condiciones de alta criminalidad que llevan el promedio hacia arriba.
+
+* **Valores Atípicos Extremos:** Variables como NumStreet y PolicOperBudg demuestran una asimetría extrema hacia la derecha. Ambas poseen una mediana muy baja (0.01 y 0.02) pero alcanzan un máximo de 1.00. Este patrón sugiere que el número de personas sin hogar y los presupuestos operativos de la policía están altamente concentrados en unas pocas áreas específicas, en lugar de distribuirse uniformemente entre las comunidades.
+
+* **Integridad de los Datos:** La columna NAs confirma que hay cero valores faltantes en este subconjunto refinado, lo que asegura una base sólida para las matrices de correlación y la regresión multivariante.
+
 
 
 

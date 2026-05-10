@@ -1,6 +1,8 @@
 ---
 output:
-  pdf_document: 
+  pdf_document:
+    toc: true
+    toc_depth: 2 
     latex_engine: pdflatex
     keep_tex: false
 header-includes:
@@ -64,7 +66,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Consultoría Propuesta
 
 Uno de los aspectos que más preocupan a los ciudadanos, es su seguridad. Queremos
-ser capaces de poder ir por donde queramos, cuando queramos, sin que haya riesgo de
+poder ir por cualquier lugar, en cualquier momento, sin que haya riesgo de
 que alguien salga perjudicado. Es por este motivo que presentamos una base de datos
 dedicada a los crímenes violentos, y el estudio de sus posibles causas. Dicha base
 de datos es "Communities and Crime"[^1].
@@ -99,7 +101,6 @@ lineas_texto <- readLines("communities.names")
 lineas_atributos <- grep("@attribute", lineas_texto, value = TRUE)
 
 #Limpiamos el texto para quedarnos solo con el nombre de la variable
-#Esto quita la palabra "@attribute" y el tipo de dato (numeric, string, etc.)
 nombres_columnas <- gsub("@attribute ", "", lineas_atributos)
 nombres_columnas <- gsub(" .*", "", nombres_columnas)
 
@@ -142,7 +143,7 @@ y el tipo de dato.
 Debido al alto número de variables, hemos seleccionado un subconjunto de 18 variables, que creemos serán
 de mayor interés para el estudio.
 
-A continuación, presento la información detallada de cada una:
+A continuación, presentamos la información detallada de cada una:
 
 ## Variable Dependiente (Objetivo)
 
@@ -152,13 +153,13 @@ A continuación, presento la información detallada de cada una:
 
 ### Variables Identificadoras
 
-* **county: **Código numérico por condado (Esta no es predictiva pero nos sirve para un estudio más denso o detectar motivos ocultos).
+* **county: **Código numérico por condado (Esta no es predictiva pero nos sirve para un estudio más denso o detectar patrones ocultos).
 
 ### Variables del Uso de la Ley
 
-* **LemasPctOfficDrugUn: **Porcentaje de oficiales asignados a la unidad de drogas. Nos interesa mucho, pues las drogas causan relaciones violentas en los individuos.
+* **LemasPctOfficDrugUn: **Porcentaje de oficiales asignados a la unidad de drogas. Nos interesa mucho, pues las drogas causan reacciones violentas en los individuos.
 
-* **PolicOperBudg: **Presupuesto operativo de la policía. Muy interesante, pues es veremos si más policías significan menos crímenes.
+* **PolicOperBudg: **Presupuesto operativo de la policía. Muy interesante, pues veremos si más policías significan menos crímenes.
 
 * **PolicAveOTWorked: **Media de tiempo extra (o fuera de horario de contrato) trabajado.
 
@@ -174,7 +175,7 @@ A continuación, presento la información detallada de cada una:
 
 * **TotalPctDiv: **Porcentaje de la población que está divorciada. Muchas de las situaciones violentas resultan en divorcio, es muy importante.
 
-* **PctKids2Par: **Porcentaje de niños que viven con sus dos padres. Esta variable puede presentar una correlación negativa con la variable dependiente, ya que a mejor situación familiar, menor riesgo hay de tensiones en la familia que desemboquen en violencia doméstica..
+* **PctKids2Par: **Porcentaje de niños que viven con sus dos padres. Esta variable puede presentar una correlación negativa con la variable dependiente, ya que podríamos ver que a mejor situación familiar, menor riesgo hay de tensiones en la familia que desemboquen en violencia doméstica.
 
 * **PctTeen2Par: **Porcentaje de niños de 12-17 años de edad que viven conjuntamente con sus padres (en la misma casa).
 
@@ -197,12 +198,12 @@ En general todas las siguientes creemos que influyen, pues normalmente, cuanto p
 
 * **NumStreet: **Número de personas sin hogar contadas en las calles. Muy importante para nuestro estudio.
 
-Todas las variables presentadas son numéricas, el dataset no contiene variables categóricas de interés con las que construir un modelo anova o ancova tras nuestro regresión múltiple lineal.
+Todas las variables presentadas son numéricas, el dataset no contiene variables categóricas de interés con las que construir un modelo anova o ancova tras nuestra regresión múltiple lineal.
 
 ## Objetivo del estudio
 
 El objetivo principal es predecir el número de crímenes violentos por cada cien mil habitantes mediante un modelo de regresión lineal múltiple. Los resultados permitirán al cliente apoyar decisiones estratégicas basadas en evidencia estadística,
-así como optimizar el gasto público en seguridad o diseñar nuevas propuestas para mejorar el sistema actual.
+así como optimizar el gasto en seguridad o diseñar nuevas propuestas para mejorar el sistema actual.
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -237,9 +238,9 @@ datos_modelo <- datos %>%
   drop_na()
 ```
 
-Antes de proceder, es importante no solamente saber la estructura interna de los datos o cómo se han almacenado, sino en un plano empírico, conocer su comportamiento en la vida real. Es decir, sería menester el **análisis univariante** de cada uno de los datos recopilados, para conocer su tendencia, dispersión y forma geométrica. El reconocimiento de patrones o ciertas tendencias pueden guiarnos para encontrar un diagnóstico acertado de las variables. De tal forma, garantizamos la correcta forma de trabajar con estos gracias a la identificación de **Outliers**, **Asimetría**, **Agrupación** y **Dispersión.**
-
 # Análisis Exploratorio de Datos
+
+Antes de proceder, es importante no solamente saber la estructura interna de los datos o cómo se han almacenado, sino en un plano empírico, conocer su comportamiento en la vida real. Es decir, sería menester el **análisis univariante** de cada uno de los datos recopilados, para conocer su tendencia, dispersión y forma geométrica. El reconocimiento de patrones o ciertas tendencias pueden guiarnos para encontrar un diagnóstico acertado de las variables. De tal forma, garantizamos la correcta forma de trabajar con estos gracias a la identificación de **Outliers**, **Asimetría**, **Agrupación** y **Dispersión.**
 
 ## Análisis Univariante
 
@@ -264,7 +265,7 @@ resumen_integral[is.na(resumen_integral)] <- "-"
 kable(resumen_integral, format = "latex", longtable = TRUE, align = "c", row.names = FALSE,
       caption = "Análisis Exploratorio Integral: Todas las Variables (Numéricas y Categóricas)") %>%
   kable_styling(latex_options = c("striped", "repeat_header", "hold_position"), 
-                full_width = FALSE, # <-- ¡Este es el cambio clave!
+                full_width = FALSE, 
                 font_size = 7) %>% 
   row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
   column_spec(1, bold = TRUE, width = "3cm") %>% 
@@ -275,7 +276,7 @@ kable(resumen_integral, format = "latex", longtable = TRUE, align = "c", row.nam
 
 **Conclusiones: **
 
-Un análisis del resumen estadístico revela varias conclusiones clave sobre la distribución de las variables:
+Este análisis del resumen estadístico revela varias conclusiones clave sobre la distribución de las variables:
 
 * **Normalización de Datos:** Todas las variables presentan un mínimo de 0.00 y un máximo de 1.00. Esto confirma que el conjunto de datos ha sido prenormalizado, estableciendo una escala uniforme que evitará que las variables con números absolutos más grandes dominen de manera desproporcionada el modelo de regresión posterior. Esto es ideal para nuestro estudio.
 
@@ -308,26 +309,26 @@ cor_matrix <- cor(datos_modelo)
 cor_target <- cor_matrix[, "ViolentCrimesPerPop"]
 cor_target_sorted <- sort(cor_target, decreasing = TRUE)
 
-# 1. Transformamos los resultados a un data.frame para formatearlo
+# 1. Transformamos los resultados a un data.frame 
 df_cor_simple <- data.frame(
   Variable = names(cor_target_sorted),
   Correlacion = round(cor_target_sorted, 3)
 )
 
-# Eliminamos la fila donde la variable se compara consigo misma (dará 1)
+# Eliminamos la fila donde la variable se compara consigo misma 
 df_cor_simple <- df_cor_simple[df_cor_simple$Variable != "ViolentCrimesPerPop", ]
 
-# 2. Generamos la tabla con kable (estética Data Solutions)
+# 2. Generamos la tabla con kable
 kable(df_cor_simple, format = "latex", align = "c", row.names = FALSE,
       caption = "Correlaciones Simples con ViolentCrimesPerPop") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
                 full_width = FALSE) %>%
   row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
   column_spec(1, bold = TRUE) %>%
-  # Coloreamos las correlaciones: si son positivas, un tono; si son negativas, otro (opcional, pero queda genial)
+  # Coloreamos las correlaciones
   column_spec(2, color = ifelse(df_cor_simple$Correlacion > 0, "#C0392B", "#2980B9"), bold = TRUE)
 
-# 3. Visualizamos la matriz completa (se queda igual)
+# 3. Visualizamos la matriz completa 
 corrplot(cor_matrix, 
          method = "color", 
          type = "upper", 
@@ -382,31 +383,33 @@ kable(df_cor_parcial, format = "latex", align = "c", row.names = FALSE,
 
 **Conclusiones de Correlaciones Parciales: **
 
-Tras la realización de las correlaciones parciales, observamos una caída drástica en el efecto que tenían todas las variables respecto a la variable dependiente. Este resultado confirma un alto grado de multicolinealidad, al asumir que varios conjuntos de variables están relacionadas de forma muy fuerte. En definitiva, muchas de estas métricas socioeconómicas comparten información redundante y explican el mismo comportamiento subyacente. Por ejemplo, para las métricas que describen el porcentaje de divorciados hay una clara relación, en el sentido de que el porcentaje total de los divorciados (**TotalPctDvr**) es básicamente la suma de los subgrupos de divorciados de hombres y mujeres (**MalePctDrv**, **FemalePctDivorce ** respectivamente), por lo que no añaden nueva información relevante, una se pueda explicar con las dos restantes. Esto se ve reflejado en la pérdida de la correlación de estas dos últimas métricas, que incluso paran a tener un efecto negativo.
+Tras la realización de las correlaciones parciales, observamos una caída drástica en el efecto que tenían todas las variables respecto a la variable dependiente. Este resultado confirma un alto grado de multicolinealidad, al asumir que varios conjuntos de variables están relacionadas de forma muy fuerte. En definitiva, muchas de estas métricas socioeconómicas comparten información redundante y explican el mismo comportamiento subyacente. Por ejemplo, para las métricas que describen el porcentaje de divorciados hay una clara relación, en el sentido de que el porcentaje total de los divorciados (**TotalPctDvr**) es básicamente la media ponderada de los subgrupos de divorciados de hombres y mujeres (**MalePctDrv**, **FemalePctDivorce ** respectivamente), por lo que no añaden nueva información relevante. Esto se ve reflejado en la pérdida de la correlación de estas dos últimas métricas, que incluso pasan a tener un efecto negativo.
 
-A pesar de esta reducción, el análisis muestra los verdaderos motores de la criminalidad en las comunidades. El desempleo (**PctUnemployed**) y las personas sin hogar (**NumStreet**) destacan cómo los principales desencadenantes de la violencia registrada (encontramos una correlación positiva), mientras que lo contrario pasa con las variables que describen los hogares estables (**PctKids2Par**, **PctTeen2Par**). A mayor porcentaje de hijos que viven sin padres divorciados, menores parecen ser los registros de violencia en aquel condado. Por otra parte, identificamos que la pobreza (**PctPopUnderPov**) pierde su impacto estadístico al ser aislada, demostrando que es la mezcla de factores cómo las condiciones de precariedad laboral y desentendimientos familiares (cómo pueden ser los divorcios) junto con la mencionada, los que realmente aumente la exposición al estrés, y por ende los casos de violencia.
+A pesar de esta reducción, el análisis muestra los verdaderos motores de la criminalidad en las comunidades. El desempleo (**PctUnemployed**) y las personas sin hogar (**NumStreet**) destacan cómo los principales desencadenantes de la violencia registrada (encontramos una correlación positiva), mientras que lo contrario pasa con las variables que describen los hogares estables (**PctKids2Par**, **PctTeen2Par**). A mayor porcentaje de hijos que viven con ambos padres en la misma casa, menores parecen ser los registros de violencia en aquel condado. Por otra parte, identificamos que la pobreza (**PctPopUnderPov**) pierde su impacto estadístico al ser aislada, mostrando que es la mezcla de factores cómo las condiciones de precariedad laboral y desentendimiento familiar lo que realmente hace que aumenten los casos de violencia.
 
-Finalemnete, vemos que esto no solamente pasa con la pobreza, sino factores cómo el porcentaje de inmigración reciente pierden su importancia.
+Finalmente, vemos que no solamente la pobreza pierde su importancia, sino también la pierden factores como el porcentaje de inmigración en los últimos tres años.
 
 
 ## Selección de Variables Explicativas
 
 Tras los datos observados de las relaciones simples y parciales, razonaremos que factores socioeconómicos tienen más relevancia para determinar los casos de violencia registrado en un condado determinado. Para nuestro estudio, recopilaremos los **predictores que presenten una relación lineal** lo más apreciable posible.
 
-Las variables que demuestran un coeficiente de correlación de Pearson más bajo que el resto, están representadas por factores cómo la inmigración (PctRecentImmig), el código de territorio (county) y el porcentaje de agentes adheridos a la unidad de drogas (LemasPctOfficDrugUn). En estos caso, podemos detectar un Coeficiente de Correlación Parcial bastante pequeño, en todos los casos tenemos que $|\rho| < 0.1$.
+Las variables que demuestran un coeficiente de correlación de Pearson más bajo que el resto, están representadas por factores cómo la inmigración (PctRecentImmig), el código de territorio (county) y el porcentaje de agentes adheridos a la unidad de drogas (LemasPctOfficDrugUn). En estos caso, podemos detectar un Coeficiente de Correlación Parcial bastante pequeño, en todos los casos tenemos que $|\rho| < 0.1$, por lo tanto quedan descartadas para nuestro estudio.
 
-Como hemos mencionado antes, los resultado del test de Correlación Parcial frente al Simples son mucho menores, cómo por ejemplo, para las variables *TotalPctDiv* y *FemalePctDiv*, las cuales han bajado de **0.661** a valores muy inferiores, incluso en el caso de FemalePctDiv, pasando a tener una correlación negativa. Este es un claro ejemplo de **Multicolinealidad**, muchos de estos factores no aportan información nueva, ya que describen cosas muy parecidas. O sea, a pesar de que sus Correlaciones con la variable independiente fueran altas, debemos de determinar la dependencia que tienen las variables explicativas entre ellas, para optar por un modelo lo más optimizado posible eliminando cualquier redundancia.
+Como hemos mencionado antes, los resultado del test de correlación parcial frente al simples son mucho menores, como por ejemplo, para las variables *TotalPctDiv* y *FemalePctDiv*, las cuales han bajado de **0.661** a valores muy inferiores, incluso en el caso de FemalePctDiv, pasando a tener una correlación negativa. Este es un claro ejemplo de **Multicolinealidad**, muchos de estos factores no aportan información nueva, ya que describen patrones muy parecidos. Es decir, a pesar de que sus correlaciones con la variable independiente fueran altas, debemos prescindir de aquellas variables explicativas que tengan alguna relación entre sí mismas, para optar por un modelo lo más optimizado posible eliminando cualquier redundancia.
 
-Siguiendo por el ejemplo de los divorcios, tras el último estudio, nos quedamos con un $\rho = 0.112$. Para solucionar esto, nos quedaríamos con una de las variables tres variables que explican la misma, y cómo la tasa total del divorcio en nuestro estudio consta del valor más alto, nos quedaríamos con la columna **TotalPctDiv**. 
+Por lo tanto, respecto a los divorcios, tras el último estudio, nos quedamos con un $\rho = 0.112$. Para solucionar esto, nos quedamos con una de las tres variables que explican la misma, y cómo la tasa total del divorcio en nuestro estudio consta del valor más alto, nos quedaríamos con la columna **TotalPctDiv**. 
 
-Pasemos a a las variables que representan el **estado socioeconómico** del condado, en concreto las variables **PctPopUnderPov**, **medIncome**, **PctUnemployed**,  conservaremos únicamente **PctUnemployed**, ya que demostró ser el verdadero impulsor directo de la criminalidad al aislar su efecto $\rho = 0.247$, siendo el mayor de toda la simulación. Siguiendo con el resto de efecto, los que corresponden al *Uso de la Ley* son grandes candidatos determinísticos para los casos de violencia por población, ya que cómo es de esperar, a más efecto policiales, más seguridad por las calles y viceversa. En este aspecto optamos por el *tamaño del cuerpo policial* (**LemasSwFTPerPop**), ya que cómo con la variable anterior, mantiene una alta colinealidad con las variables del mismo tipo. De este modo, excluiríamos de nuestro modelo a al presupuesto operativo (**PolicOperBudg**) y el nivel de demanda de los ciudadanos (**LemasTotReqPerPop**).
+Pasando a a las variables que representan el **estado socioeconómico** del condado, en concreto las variables **PctPopUnderPov**, **medIncome**, **PctUnemployed**, conservaremos únicamente **PctUnemployed**, ya que demostró ser el verdadero impulsor directo de la criminalidad al aislar su efecto $\rho = 0.247$. 
 
-Finalmente y para acabar con la selección del motor del modelo, nos queda uno de los factores que parece reducir nuestra variable dependiente, teniendo un efecto negativo sobre esta. Parece ser que los hijos de padres que viven en una misma unidad doméstica determina la reducción de casos de violencia doméstica. Nos quedaríamos con la variable más fuerte que representa el conjunto total de los datos, **PctKids2Par**, ya que su hermana **PctTeens2Par** es solamente un subconjunto de la misma, y la redundancia en este caso está más que clara.
+En cuanto a los demás efectos, los que corresponden al *Uso de la Ley* son grandes candidatos determinísticos para los casos de violencia por población, ya que como parece lógico, a más efectivos policiales, más seguridad por las calles y viceversa. En este aspecto optamos por el *tamaño del cuerpo policial* (**LemasSwFTPerPop**), ya que tiene el valor de correlación simple más alto entre todas las variables policiales y todas tienen una correlación parcial muy similar. De este modo, excluiremos de nuestro modelo al presupuesto operativo (**PolicOperBudg**) y el nivel de demanda de los ciudadanos (**LemasTotReqPerPop**).
+
+Finalmente y para acabar con la selección del motor del modelo, nos queda uno de los factores que parece reducir nuestra variable dependiente significativamente, teniendo un efecto negativo sobre esta. Se trata de los hijos de padres que viven en una misma unidad doméstica y determina la reducción de casos de violencia doméstica. Nos quedaríamos con la variable más fuerte **PctKids2Par**, ya que su hermana **PctTeens2Par** está ligeramente menos correlada.
 
 
 \begin{conclusionbox}{Variables de nuestro modelo}
 
-Hemos conseguido reducir la dimensionalidad para evitar inestabilidades en las varianzas de los coeficientes en el futuro, proponiendo entonces, un modelo de regresión múltiple parsimonioso compuesto por seis variables explicativas definitivas: PctKids2Par, PctUnemployed, TotalPctDiv, NumStreet, LemasSwFTPerPop y LemasTotReqPerPop.
+Hemos conseguido reducir la dimensionalidad para evitar inestabilidades en las varianzas de los coeficientes en el futuro, proponiendo entonces, un modelo de regresión múltiple parsimonioso compuesto por cinco variables explicativas definitivas: PctKids2Par, PctUnemployed, TotalPctDiv, NumStreet, LemasSwFTPerPop.
 
 \end{conclusionbox}
 
@@ -466,7 +469,7 @@ kable(tabla_coef, format = "latex", align = "c",
 
   * **Intercepto** ($\beta_0$): El valor predicho del intercepto es **0.4219**, siendo *estadísticamente significativo* (**p-valor = 8.171e-03**). Esto indica que, *si todas las variables del modelo fuesen cero*, la tasa base esperada de crímenes violentos sería de 0.4219.
 
-Tras analizar la magnitud de los coeficientes, los **factores que presentan un impacto estadísticamente significativo** sobre la variable dependiente son **PctKids2Par** con un coeficiente de -0.6112 (p-valor = **2.592e-06**), su impacto es el más fuerte y altamente significativo de todo el modelo. Por cada unidad que *aumenta la proporción de niños en hogares biparentales*, la tasa de *crímenes violentos disminuye* drásticamente en 0.6112 unidades, asumiendo que el resto de variables se mantienen constantes. Por otra parte **NumStreet** tiene un impacto positivo y significativo de 0.2769 (p-valor = **6.338e-04**). A *mayor presencia de personas sin hogar* en las calles, *mayor es la tasa de crímenes* violentos registrada. Y por último **PctUnemployed** también muestra un efecto positivo y significativo estimado en 0.2715 (p-valor = **4.883e-03**), confirmando que el desempleo actúa como un claro impulsor directo de la criminalidad.
+Tras analizar la magnitud de los coeficientes, los **factores que presentan un impacto estadísticamente significativo** sobre la variable dependiente son **PctKids2Par** con un coeficiente de -0.6112 (p-valor = **2.592e-06**), su impacto es el más fuerte y altamente significativo de todo el modelo. Por cada unidad que aumenta la proporción de niños en hogares biparentales, la tasa de *crímenes violentos disminuye* drásticamente en 0.6112 unidades, asumiendo que el resto de variables se mantienen constantes. Por otra parte **NumStreet** tiene un impacto positivo y significativo de 0.2769 (p-valor = **6.338e-04**). A mayor presencia de personas sin hogar en las calles, mayor es la tasa de crímenes violentos registrada. Y por último **PctUnemployed** también muestra un efecto positivo y significativo estimado en 0.2715 (p-valor = **4.883e-03**), confirmando que el desempleo actúa como un claro impulsor directo de la criminalidad.
 
 **Efectos No Significativos**: De forma muy clara, el modelo detecta que la tasa de divorcios (**TotalPctDiv**, p-valor = 3.451e-01) y el número de efectivos policiales (**LemasSwFTPerPop**, p-valor = 4.094e-01) *no son estadísticamente significativos* para este modelo. Esto nos sugiere que, una vez controlados el desempleo, el sinhogarismo y la estructura familiar, ni los divorcios a nivel general ni la cantidad de policías en las calles aportan una influencia demostrable estadísticamente sobre la variación de los crímenes violentos.
 
@@ -491,7 +494,7 @@ kable(tabla_intervalos,
   row_spec(0, bold = TRUE, color = "white", background = "#2C3E50")
 ```
 
-Los intervalos de confianza confirman matemáticamente nuestras observaciones previas los predictores PctKids2Par, NumStreet y PctUnemployed **no cruzan el cero**, demostrando *significancia estadística*. En cambio, los intervalos de los **divorcios** (TotalPctDiv) y la **presencia policial** (LemasSwFTPerPop) sí **incluyen el cero**, confirmando de forma definitiva la *falta de evidencia de que realmente influyan* en el crimen en este modelo.
+Los intervalos de confianza confirman matemáticamente nuestras observaciones previas; los predictores PctKids2Par, NumStreet y PctUnemployed **no cruzan el cero**, demostrando *significancia estadística*. En cambio, los intervalos de los **divorcios** (TotalPctDiv) y la **presencia policial** (LemasSwFTPerPop) sí incluyen el cero, confirmando de forma definitiva la *falta de evidencia de que realmente influyan* en el crimen y, por tanto, en este modelo.
 
 
 **Recomendaciones Estratégicas: **
@@ -500,7 +503,7 @@ Asumiendo que el resto de variables se mantienen constantes (ceteris paribus), l
 
 Por el contrario, se deben reducir el sinhogarismo (NumStreet, 0.2769) y el desempleo (PctUnemployed, 0.2715), invirtiendo en la inserción laboral y la red de vivienda social, pues son los claros impulsores del crimen. Finalmente, dado que el volumen de efectivos policiales carece de significatividad estadística, recomendamos aumentar la eficacia del despliegue de seguridad actual en lugar de simplemente aumentar el número de agentes, priorizando la inversión en las variables socioeconómicas mencionadas anteriormente.
 
-La magnitud de impacto preventivo de familias biparentales es mayor que el sinhogarismo y el desempleo, pero no por ello hay que dejar de invertir las dos últimas, pues siguen teniendo maginitudes importantes. 
+La magnitud de impacto preventivo de familias biparentales es mayor que el sinhogarismo y el desempleo, pero no por ello hay que dejar de invertir las dos últimas, pues siguen teniendo magnitudes de extrema importancia. 
 
 # Evaluación de la Bondad de Ajuste
 
@@ -508,7 +511,7 @@ Para garantizar la fiabilidad de nuestras predicciones, evaluamos la bondad del 
 
 ## Contraste de Significación Global (ANOVA)
 
-Este contraste nos servirá para evaluar si la *variabilidad explicada por el modelo ajustado es suficientemente grande* comparada con la que queda sin explicar (la de los residuos). Para ello, *plantearemos si el conjunto de variables explicativas aporta información conjunta significativa*, enfrentando la siguiente hipótesis nula frente a la alternativa:
+Este contraste nos servirá para evaluar si la *variabilidad explicada por el modelo ajustado es suficientemente grande* comparada con la que queda sin explicar (la de los residuos). Para ello, plantearemos si el conjunto de variables explicativas aporta información conjunta significativa, enfrentando la siguiente hipótesis nula frente a la alternativa:
 
 $$H_0 : \beta_1 = \beta_2 = \dots = \beta_{p-1} = 0$$
 $$H_1 : \text{algún } \beta_i \neq 0$$
@@ -520,7 +523,7 @@ $$F = \frac{SSR/(p-1)}{SSE/(n-p)} = \frac{MSR}{MSE} \sim F_{(p-1,n-p)}$$
 # 1. Contraste de significación global (ANOVA)
 afit <- anova(modelo_final)
 
-# Determinamos el número de efectos en la tabla (el último es el Error/Residual)
+# Determinamos el número de efectos en la tabla 
 nterminos <- length(afit[[1]])
 
 # Agrupamos los componentes de la Regresión (excluyendo el último término)
@@ -528,7 +531,7 @@ gl.ssr <- sum(afit[[1]][-nterminos])
 ssr <- sum(afit[[2]][-nterminos])
 msr <- ssr / gl.ssr
 
-# Extraemos los componentes del Error (el último término)
+# Extraemos los componentes del Error 
 gl.sse <- afit[[1]][nterminos]
 sse <- afit[[2]][nterminos]
 mse <- afit[[3]][nterminos]
@@ -554,7 +557,7 @@ Observando los resultados obtenidos de nuestro modelo, el *estadístico F obteni
 
 \begin{conclusionbox}{Conclusión: ANOVA}
 
-El modelo es globalmente significativo y que las variables seleccionadas predicen conjuntamente la criminalidad de forma válida. Al menos una de las variables predictoras aporta información relevante para explicar el comportamiento de la variable dependiente.
+El modelo es globalmente significativo ya que las variables seleccionadas predicen conjuntamente la criminalidad de forma válida. Al menos una de las variables predictoras aporta información relevante para explicar el comportamiento de la variable dependiente.
 
 \end{conclusionbox}
 
@@ -640,13 +643,15 @@ Como complemento visual al QQ-Plot, que es muy *sensible a los valores extremos*
 
 ```{r warning=FALSE, echo=FALSE, message=FALSE}
 # 1.2 Histograma de los residuos
-hist(r, prob = TRUE, main = "Histograma de Residuos", xlab = "Residuos estudentizados", col = "lightgray")
+max_y <- max(hist(r, plot = FALSE)$density, dnorm(mean(r), mean(r), sd(r)))
+
+hist(r, prob = TRUE, main = "Histograma de Residuos", xlab = "Residuos estudentizados", col = "lightgray", ylim = c(0, max_y * 1.05))
 xseq <- seq(min(r), max(r), length = 100)
 lines(xseq, dnorm(xseq, mean(r), sd(r)), col = "blue", lwd = 2)
 ```
 Por último, para evitar valoraciones subjetivas de los gráficos, corroboramos las evidencias mediante pruebas estadísticas. Calcularemos el **test de Shapiro-Wilk** y el de **Kolmogorov-Smirnov**. A nivel de consultoría, basaremos nuestra conclusión definitiva en el test de *Shapiro-Wilk*, ya que es una prueba específica diseñada exclusivamente para **evaluar la normalidad**. El test de *Kolmogorov-Smirnov* se presenta como apoyo, pero al ser un **contraste de bondad** de ajuste de propósito general, tiene menor potencia analítica para este caso.
 
-```{r warning=FALSE}
+```{r  warning=FALSE, echo=FALSE, message=FALSE}
 # 1.3 Contrastes Formales de Normalidad
 shapiro.test(r)
 
@@ -678,7 +683,7 @@ Para corroborar de forma rigurosa la inspección visual, utilizamos el **test de
 $$H_0: Var(\epsilon_i) = \sigma^2$$ 
 $$H_1: Var(\epsilon_i) = f(x_i) \quad \text{(Heterocedasticidad)}$$
 
-```{r warning=FALSE, message=FALSE}
+```{r warning=FALSE, message=FALSE, echo=FALSE}
 # 2.2 Contraste Formal de Homocedasticidad (Breusch-Pagan)
 library(lmtest)
 
@@ -686,7 +691,7 @@ bp_test <- bptest(modelo_final)
 
 cat("Test de Breusch-Pagan: BP =", bp_test$statistic, ", p-valor =", bp_test$p.value, "\n")
 ```
-Aunque *el análisis gráfico inicial nos generaba ciertas dudas* debido a las *desviaciones ligeramente pronunciadas* de la línea de tendencia, el test estadístico **descarta nuestro problema**. El test de Breusch-Pagan tiene un estadístico $BP = 8.3037$ con un **p-valor de 0.1403**. Como el p-valor es muy superior a 0.05, no *podemos rechazar la hipótesis nula*. Q
+Aunque *el análisis gráfico inicial nos generaba ciertas dudas* debido a las *desviaciones ligeramente pronunciadas* de la línea de tendencia, el test estadístico **descarta nuestro problema**. El test de Breusch-Pagan tiene un estadístico $BP = 8.3037$ con un **p-valor de 0.1403**. Como el p-valor es muy superior a 0.05, no *podemos rechazar la hipótesis nula*. 
 
 \begin{conclusionbox}{Conclusión: Hay Homocedasticidad}
 
@@ -700,13 +705,13 @@ Queda corroborado estadísticamente que el supuesto de homocedasticidad se cumpl
 
 ## Supuesto de Incorrelación
 
-A continuación, vamos a comprobar si los errores (los residuos) de nuestro modelo son realmente aleatorios. El supuesto de **Independencia** exige que el error que comete el modelo al predecir el crimen de una comunidad no tenga absolutamente nada que ver con la consecutiva predicción. En caso de haber un orden subyadcente en el muestreo (por ejemplo, si los datos estuviesen *ordenados geográficamente o por cercanía* al haberlos tomado). Para esto distinguimos **tres métodos** para asegurar este supuesto:
+A continuación, vamos a comprobar si los errores (los residuos) de nuestro modelo son realmente aleatorios. El supuesto de **Independencia** exige que el error que comete el modelo al predecir el crimen de una comunidad no tenga absolutamente ninguna relación con la predicción consecutiva. Es por ejemplo el caso de encontrar un orden subyadcente en el muestreo (por ejemplo, si los datos estuviesen *ordenados geográficamente o por cercanía* al haberlos tomado). Para esto distinguimos **tres métodos** para asegurar este supuesto:
 
 ---
 
   * **1.- Correlación serial ** 
   
-En un modelo lineal cásico ideal, la matriz de varianzas y covarianzas de los errores dicta que $Cov(\epsilon_i, \epsilon_j) = 0$ para cualquier $i \neq j$.
+En un modelo lineal clásico ideal, la matriz de varianzas y covarianzas de los errores dicta que $Cov(\epsilon_i, \epsilon_j) = 0$ para cualquier $i \neq j$.
 
 La **correlación serial** rompe esta regla, ocurre cuando el error actual $\epsilon_i$ está matemáticamente ligado al error separado por $s$ posiciones ($\epsilon_{i-s}$). La ecuación que define el comportamiento de los residuos es la siguiente:
 
@@ -720,6 +725,7 @@ $$\epsilon_i = \rho \epsilon_{i-1} + u_i$$
   
   * $u_i$: Es el "ruido blanco". Representa el error intrínseco, puramente aleatorio e impredecible.
 
+Esto lo usaremos en un test futura, y nos será de utilidad para evaluar este apartado.
 
 \begin{conclusionbox}{Nota sobre la Correlación}
 
@@ -739,7 +745,7 @@ De esta forma distinguimos la correlación si los puntos de nuestra gráfica sig
 Como en estadística el "ojo humano" no es suficiente para publicar un trabajo, usamos este contraste matemático para dar un veredicto final, el Test de Durbin-Watson (La prueba Final), el cual desarrollaremos a continuación.
 \end{conclusionbox}
 
-En el siguiente gráfico, dibujamos en el eje X el residuo de la observación anterior ($\epsilon_{i-1}$), y en el eje Y el residuo de la observación actual ($\epsilon_i$)." Así cuadra perfectamente con el título de tu gráfico.
+En el siguiente gráfico, dibujamos en el eje X el residuo de la observación anterior ($\epsilon_{i-1}$), y en el eje Y el residuo de la observación actual ($\epsilon_i$).
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
 # 1. Extraemos los residuos
@@ -769,7 +775,7 @@ ggplot(df_lag, aes(x = anterior, y = actual)) +
 
 ```
 
-Claramente, no distinguir ver una tendencia clara en la que se apoyen los punto. De hecho, los residuos forman una nube de puntos, distribuidos de forma aleatoria. Esto juega a favor de nuestro modelo, ya que no hay indicios de que al tomar los datos en cierto orden/muestreo, se hayan podido 'contagiar' unos a otros. 
+Claramente, no vemos una tendencia clara en la que se apoyen los puntos. De hecho, los residuos forman una nube de puntos, distribuidos de forma aleatoria. Esto juega a favor de nuestro modelo, ya que no hay indicios de que al tomar los datos en cierto orden/muestreo, se hayan podido 'contagiar' unos a otros. 
 
   * **3.- Test de Durbin-Watson**
   
@@ -777,7 +783,7 @@ Planteamos el test de Durbin-Watson con la finalidad de determinar de forma clar
 
   * **Hipótesis Nula ($H_0$):** La verdadera autocorrelación de los residuos es cero (es decir, independencia).
   
-  * **El Estádistico ($d$):** El test calcula la suma de las diferencias al cuadrado entre residuos consecutivos dividida por la varianza total de los residuos. La magia de esta fórmula es que siempre arroja un valor acotado entre **0 y 4**. Se define de la siguiente forma:
+  * **El Estádistico ($d$):** El test calcula la suma de las diferencias al cuadrado entre residuos consecutivos dividida por la varianza total de los residuos. La magia de esta fórmula es que siempre devuelve un valor acotado entre **0 y 4**. Se define de la siguiente forma:
   
     * $d \approx 2$: No hay correlación serial (Aceptamos $H_0$).
     * $d$ cercano a 0: Alarma. Hay correlación serial positiva evidente.
@@ -786,12 +792,7 @@ Planteamos el test de Durbin-Watson con la finalidad de determinar de forma clar
 $$d = \frac{\sum_{i=2}^{n} (e_i - e_{i-1})^2}{\sum_{i=1}^{n} e_i^2}$$
 Para valores de $n$ suficientemente grandes podemos desarrollar el binomio, llegando a una aproximación fundamental que conecta el estadístico con el coeficiente de autocorrelación ($\hat \rho$):
 $$d \approx 2(1 - \hat{\rho})$$
-  * Si $\hat{\rho} \approx 0$ (Hay Independencia), entonces $d \approx 2(1 - 0) = \mathbf{2}$.
-  * Si $\hat{\rho} > 0$ (Correlación positiva), la resta se hace pequeña y $d < 2$ (tiende a 0).
-  * Si $\hat{\rho} < 0$ (Correlación negativa), el paréntesis suma y $d > 2$ (tiende a 4).
-
-
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE, echo=FALSE}
 # Ejecutamos el test formal sobre el modelo
 dwtest(modelo_final)
 
@@ -807,7 +808,7 @@ Garantizamos la precisión del modelo y de los contrástes estadísticos, evitan
 
 ## Existencia de Valores Sobreinfluyentes
 
-Para continuar es *crucial identificar si existe un subconjunto reducido de datos que altere de manera desproporcionada el ajuste* y las estimaciones finales. En nuestro contexto, esto significaría que **una única comunidad con dinámicas criminales extremas** estaría "tirando" de la recta de regresión como un imán, **sesgando todas nuestras recomendaciones**.
+Para continuar es crucial identificar si existe un subconjunto reducido de datos que altere de manera desproporcionada el ajuste y las estimaciones finales. En nuestro contexto, esto significaría que una única comunidad con dinámicas criminales extremas estaría "tirando" de la recta de regresión como un imán, **sesgando todas nuestras recomendaciones**.
 
 Por consiguiente, para diagnosticar este problema, la métrica principal es la **Distancia de Cook** ($D_i$). Este estadístico mide el impacto global de una observación calculando exactamente cuánto cambiarían los coeficientes del modelo si excluyéramos ese punto específico del análisis. Matemáticamente se define como:
 
@@ -825,7 +826,7 @@ abline(h = 1, lty = 2, col = "red", lwd = 2)
 ```
 El análisis visual realizado es excelente para nuestro modelo, sin embargo, a nivel técnico **necesitamos un análisis analítico riguroso** para corroborar con la visualización. Para ello, calculamos la matriz completa de medidas de influencia globales. Con esta matriz podremos evaluar múltiples métricas avanzadas como **DFFITS** para el *impacto en predicciones*, **DFBETAS** para el *impacto en cada coeficiente* y **COVRATIO** para la *precisión general* y además sabremos si algún registro desastibiliza el modelo.
 
-```{r warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 # 4.2 Análisis Analítico Exhaustivo
 # Calculamos la matriz completa de medidas de influencia
 medidas_influencia <- influence.measures(modelo_final)
@@ -850,7 +851,6 @@ Para determinar la estrategia de modelización definitiva, vamos a emplear un al
 $$AIC = 2k - 2\ln(\hat{L})$$
 Donde $k$ representa el **número de parámetros del modelo** y $\hat{L}$ es el **valor máximo de la función de verosimilitud**. Optamos por esta métrica y descartamos el Criterio de Información Bayesiano (BIC) porque este impone una penalización logarítmica muy elevada en muestras grandes ($k\ln(n)$), lo que en contextos de negocio suele eliminar variables con auténtico valor predictivo.
 
-A continuación, ejecutamos el algoritmo y generamos una tabla para comparar ambos modelos.
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
 modelo_general <- lm(ViolentCrimesPerPop ~ ., data = datos_modelo_final)
@@ -912,7 +912,7 @@ kable(metricas, format = "latex", align = "c", digits = 4,
 
 ## Evaluación y Selección del Modelo
 
-El **Modelo AIC es estadísticamente superior** y la nuestra opción definitiva. 
+El **Modelo AIC es estadísticamente superior** y nuestra opción definitiva. 
 
 Al evaluar las métricas, el algoritmo ha logrado *reducir la complejidad del modelo, pasando de 5 a 3 variables*, logrando un doble beneficio: 
 
@@ -934,7 +934,7 @@ Además, la significación global (ANOVA) en ambos modelos es total ($p = 0$), y
 
 
 \begin{conclusionbox}{Modelo Final AIC}
-Tras la búsqueda de una mayor interpretabilidad para nuestro modelo, hemos reducido el número de variables a tres determinando que los factores del número de efectivos policiales y la tasa de divorcios es prescindible paraa nuestro modelo, nos quedamos con las siguientes variables:
+Tras la búsqueda de una mayor interpretabilidad para nuestro modelo, hemos reducido el número de variables a tres determinando que los factores del número de efectivos policiales y la tasa de divorcios es prescindible para nuestro modelo, nos quedamos con las siguientes variables:
 
 PctKids2Par, PctUnemployed y NumStreet.
 \end{conclusionbox}
@@ -954,7 +954,7 @@ $$z_{\lambda,i} = \frac{y_i^\lambda - 1}{\lambda \dot{y}^{\lambda-1}} \quad \tex
 Donde $\dot{y}$ es la media geométrica de las observaciones. Al aplicar este procedimiento, nos aseguramos de que el modelo no solo sea predictivo, sino matemáticamente impecable.
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
-# Librerías necesarias para estética y maquetación
+# Librerías necesarias para estética y maquetación/ Las incluímos de nuevo debido a errores
 library(MASS)
 library(broom)
 library(knitr)
@@ -1011,10 +1011,11 @@ plot(modelo_refinado_bc, which = 1,
      col = "darkgray", pch = 20)
 
 ```
+
 ## Términos de Interacción
 
 Una vez optimizada la estructura matemática, procedemos a enriquecer la interpretación estratégica.
-En sociología criminal, es normal considerar que el *impacto del desempleo* (**PctUnemployed**) no es lineal ni aislado sino que su **efecto puede ser mucho más devastador** en comunidades con estructuras familiares ya debilitadas (**PctKids2Par**).Introducimos un término de interacción para verificar si estas variables "interactúan" entre sí, alterando su peso individual en la predicción.
+En sociología criminal, es normal considerar que el *impacto del desempleo* (**PctUnemployed**) no es lineal ni aislado sino que su **efecto puede ser mucho más devastador** en comunidades con estructuras familiares ya debilitadas (**PctKids2Par**). Introducimos un término de interacción para verificar si estas variables "interactúan" entre sí, alterando su peso individual en la predicción.
 El modelo se expande de la siguiente forma:
 $$y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \beta_4(x_1 \cdot x_2) + \epsilon$$
 Donde $\beta_4$ representa ese efecto conjunto que va más allá de la simple suma de los factores.
@@ -1047,7 +1048,7 @@ cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo 
 
 Tras la evaluación de técnicas más avanzadas para superar las limitaciones del modelo AIC inicial, hemos sacado las siguientes conclusiones:
 
-* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró **estabilizar la varianza de los residuos**, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.4256, garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7602.
+* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró **estabilizar la varianza de los residuos**, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.388, garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7602.
 
 * **Análisis de Interacciones y Complejidad:** Exploramos la hipótesis de un efecto multiplicador entre el desempleo y las estructuras familiares, sin embargo, los resultados indicaron que **el término de interacción no es estadísticamente significativo** ($p = 0.6175$). Su inclusión no solo redujo la calidad del ajuste ($R^2$ ajustado bajó a 0.7587), sino que provocó un aumento innecesario en la inestabilidad numérica, con un número de condición ($\kappa$) de 949.01, lo que señala un riesgo de multicolinealidad moderada que no teníamos anteriormente.
 

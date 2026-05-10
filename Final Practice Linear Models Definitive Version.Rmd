@@ -621,14 +621,89 @@ Por otro lado, la mayoría de las observaciones listadas aparecen marcadas casi 
 
 Sin embargo, el indicador definitivo para evaluar el peligro estructural sobre el modelo es la distancia de Cook (cook.d). Al observar dicha columna, comprobamos que el valor máximo absoluto de toda la muestra es de 0.56 (observación 53), manteniéndose muy por debajo del umbral crítico de 1. Por tanto, concluimos que ninguna de estas observaciones atípicas ejerce una influencia desproporcionada que logre desestabilizar el ajuste global, confirmando que el modelo es altamente robusto.
 
+# Selección de Modelo Final: AIC y Criterio
 
+Para determinar la estrategia de modelización definitiva, vamos a emplear un algoritmo de selección por pasos basado en el Criterio de Información de Akaike (AIC). Este criterio busca el equilibrio más óptimo entre la bondad de ajuste y la parsimonia, penalizando por tanto la adición de variables que no aportan un valor predictivo suficiente. Su formula matemática es:
+$$AIC = 2k - 2\ln(\hat{L})$$
+Donde $k$ representa el número de parámetros del modelo y $\hat{L}$ es el valor máximo de la función de verosimilitud. Optamos por esta métrica y descartamos el Criterio de Información Bayesiano (BIC) porque este impone una penalización logarítmica muy elevada en muestras grandes ($k\ln(n)$), lo que en contextos de negocio suele eliminar variables con auténtico valor predictivo.
 
+A continuación, ejecutamos el algoritmo y generamos una tabla para comparar ambos modelos.
 
+```{r}
+modelo_general <- lm(ViolentCrimesPerPop ~ ., data = datos_modelo_final)
+modelo_aic <- step(modelo_general, direction = "both", trace = 0)
 
+media_y <- mean(datos_modelo_final$ViolentCrimesPerPop, na.rm = TRUE)
 
+obtener_p_f <- function(m) {
+  f <- summary(m)$fstatistic
+  pf(f[1], f[2], f[3], lower.tail = FALSE)
+}
 
+metricas <- data.frame(
+  Variable = c(
+    "Num. Variables",
+    "Signif. Global (p-valor ANOVA)",
+    "R2 Ajustado",
+    "AIC",
+    "Desv. Tipica Residuos (s)",
+    "Coef. Variacion (CV %)",
+    "Normalidad (p-valor SW)",
+    "Homocedasticidad (p-valor BP)",
+    "Autocorrelacion (p-valor DW)",
+    "Max. Distancia Cook"
+  ),
+  Modelo_General = c(
+    length(coef(modelo_general)) - 1,
+    obtener_p_f(modelo_general),
+    summary(modelo_general)$adj.r.squared,
+    AIC(modelo_general),
+    summary(modelo_general)$sigma,
+    (summary(modelo_general)$sigma / media_y) * 100,
+    shapiro.test(rstudent(modelo_general))$p.value,
+    bptest(modelo_general)$p.value,
+    dwtest(modelo_general)$p.value,
+    max(cooks.distance(modelo_general))
+  ),
+  Modelo_AIC = c(
+    length(coef(modelo_aic)) - 1,
+    obtener_p_f(modelo_aic),
+    summary(modelo_aic)$adj.r.squared,
+    AIC(modelo_aic),
+    summary(modelo_aic)$sigma,
+    (summary(modelo_aic)$sigma / media_y) * 100,
+    shapiro.test(rstudent(modelo_aic))$p.value,
+    bptest(modelo_aic)$p.value,
+    dwtest(modelo_aic)$p.value,
+    max(cooks.distance(modelo_aic))
+  )
+)
 
+kable(metricas, format = "html", align = "c", digits = 4,
+      caption = "Comparativa Integral de Estrategias de Modelizacion") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  pack_rows("Bondad de Ajuste", 1, 6) %>%
+  pack_rows("Cumplimiento de Supuestos", 7, 10)
+```
 
+## Evaluación y Selección del Modelo
+
+El Modelo AIC es estadísticamente superior y la nuestra opción definitiva. 
+
+Al evaluar las métricas, el algoritmo ha logrado reducir la complejidad del modelo, pasando de 5 a 3 variables, logrando un doble beneficio: 
+
+* **Mejora la capacidad explicativa:** El $R^2$ Ajustado sube ligeramente de 0.7513 a 0.7528.
+* **Reduce el error:** La desviación típica de los residuos ($s$) disminuye de 0.1359 a 0.1355.
+El valor del AIC confirma esta mejora, descendiendo de -137.5547 a -140.2472. Esto demuestra que el modelo simplificado generado por AIC es más eficiente, evitando el sobreajuste al eliminar variables que no aportaban valor predictivo real y facilitando la interpretación estratégica.
+
+Es completamente posible y válido hacer inferencia en ambos modelos, ya que los dos cumplen con los supuestos fundamentales de los residuos (p-valores > 0.05):
+
+* **Normalidad (Test de Shapiro-Wilk):** Los errores se distribuyen de forma normal (General: $p = 0.5141$, AIC: $p = 0.5362$).
+* **Homocedasticidad (Test de Breusch-Pagan):** La varianza es constante a lo largo de las predicciones (General: $p = 0.1403$, AIC: $p = 0.0537$). Aunque el modelo AIC se acerca más al límite de 0.05, lo supera y mantiene el supuesto.
+* **Autocorrelación (Test de Durbin-Watson):** Hay independencia en los residuos (General: $p = 0.1807$, AIC: $p = 0.1936$).
+
+Además, la significación global (ANOVA) en ambos modelos es total ($p = 0$), y la influencia máxima medida por la Distancia de Cook se mantiene por debajo del umbral de peligro de 1 (0.5645 y 0.7161, respectivamente). Por tanto, los intervalos de confianza, los p-valores individuales y las conclusiones estratégicas que se extraigan son matemáticamente sólidas.
 
 
 

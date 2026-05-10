@@ -61,7 +61,7 @@ always_allow_html: true
 
 ```{r setup, include=FALSE,warning=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
+```
 
 # Consultoría Propuesta
 
@@ -1038,15 +1038,16 @@ kappa_final <- max(lambdas_final) / min(lambdas_final)
 
 r2_ajustado <- summary(modelo_extra_final)$adj.r.squared
 
-cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo es de %.2f y el R-cuadrado ajustado es de %.4f.\n", kappa_final, r2_ajustado))
+cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo es de %.2f.\n", kappa_final))
+cat(sprintf("El R-cuadrado ajustado es de %.4f.\n", r2_ajustado))
 ```
 **Conclusión Final: **
 
 Tras la evaluación de técnicas más avanzadas para superar las limitaciones del modelo AIC inicial, hemos sacado las siguientes conclusiones:
 
-* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró **estabilizar la varianza de los residuos**, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.388 (Véase Table 10), garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7602.
+* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró **estabilizar la varianza de los residuos**, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.388 (Véase Table 10), garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7589.
 
-* **Análisis de Interacciones y Complejidad:** Exploramos la hipótesis de un efecto multiplicador entre el desempleo y las estructuras familiares (Véase Table 11), sin embargo, los resultados indicaron que **el término de interacción no es estadísticamente significativo** ($p = 0.6175$). Su inclusión no solo redujo la calidad del ajuste ($R^2$ ajustado bajó a 0.7587), sino que provocó un aumento innecesario en la inestabilidad numérica, con un número de condición ($\kappa$) de 949.01, lo que señala un riesgo de multicolinealidad moderada que no teníamos anteriormente.
+* **Análisis de Interacciones y Complejidad:** Exploramos la hipótesis de un efecto multiplicador entre el desempleo y las estructuras familiares (Véase Table 11), sin embargo, los resultados indicaron que **el término de interacción no es estadísticamente significativo** ($p = 0.5246$). Su inclusión no solo redujo la calidad del ajuste ($R^2$ ajustado bajó a 0.7577), sino que provocó un aumento innecesario en la inestabilidad numérica, con un número de condición ($\kappa$) de 949.02, lo que señala un riesgo de multicolinealidad moderada que no teníamos anteriormente.
 
 * **Selección del Modelo Óptimo:** Siguiendo el principio de parsimonia, que nos dicta la preferencia por el modelo más sencillo que mejor explique los datos, se descarta el modelo con interacciones. El **modelo aditivo con transformación Box-Cox se establece como el definitivo** de la práctica, al ser el más eficiente, robusto ante problemas de varianza y con la mayor capacidad predictiva demostrada.
 

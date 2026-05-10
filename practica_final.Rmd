@@ -6,6 +6,8 @@ output:
     latex_engine: pdflatex
     keep_tex: false
 header-includes:
+  - \let\oldmaketitle\maketitle
+  - \renewcommand{\maketitle}{\oldmaketitle\newpage}
   - \usepackage[most]{tcolorbox}
   - \definecolor{naranja_tema}{HTML}{E67E22}
   - \definecolor{azul_tema}{HTML}{2C3E50}
@@ -954,20 +956,18 @@ $$z_{\lambda,i} = \frac{y_i^\lambda - 1}{\lambda \dot{y}^{\lambda-1}} \quad \tex
 Donde $\dot{y}$ es la media geométrica de las observaciones. Al aplicar este procedimiento, nos aseguramos de que el modelo no solo sea predictivo, sino matemáticamente impecable.
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
-# Librerías necesarias para estética y maquetación/ Las incluímos de nuevo debido a errores
 library(MASS)
 library(broom)
 library(knitr)
 library(kableExtra)
+library(ggplot2)
+library(lmtest)
 
-# 1. Extraemos los datos de Box-Cox sin generar el gráfico por defecto
 bc <- boxcox(modelo_aic, plotit = FALSE)
 
-# 2. Encontramos el lambda óptimo y preparamos datos para ggplot
 df_bc <- data.frame(lambda = bc$x, loglik = bc$y)
 lambda_opt <- bc$x[which.max(bc$y)]
 
-# 3. Generamos un gráfico Box-Cox con estilo profesional (ggplot2)
 grafico_bc <- ggplot(df_bc, aes(x = lambda, y = loglik)) +
   geom_line(color = "#2c3e50", linewidth = 1) +
   geom_vline(xintercept = lambda_opt, color = "#e74c3c", linetype = "dashed", linewidth = 0.8) +
@@ -982,14 +982,11 @@ grafico_bc <- ggplot(df_bc, aes(x = lambda, y = loglik)) +
 
 print(grafico_bc)
 
-# 4. Aplicamos la transformación a la variable respuesta
 media_geo <- exp(mean(log(datos_modelo_final$ViolentCrimesPerPop)))
 datos_modelo_final$ViolentCrimes_bc <- (datos_modelo_final$ViolentCrimesPerPop^lambda_opt - 1) / (lambda_opt * media_geo^(lambda_opt - 1))
 
-# 5. Ajustamos el modelo refinado
 modelo_refinado_bc <- lm(ViolentCrimes_bc ~ PctKids2Par + PctUnemployed + NumStreet, data = datos_modelo_final)
 
-# 6. Extraemos los coeficientes y generamos una tabla bonita para el PDF
 tabla_resumen <- tidy(modelo_refinado_bc)
 
 tabla_resumen %>%
@@ -999,8 +996,10 @@ tabla_resumen %>%
   kable_styling(latex_options = c("striped", "hold_position"), 
                 full_width = FALSE)
 
-# 7. Test de Breusch-Pagan para verificar la homocedasticidad
 bptest(modelo_refinado_bc)
+
+r2_ajustado <- summary(modelo_refinado_bc)$adj.r.squared
+cat(sprintf("Adjusted R-squared: %.4f\n", r2_ajustado))
 ```
 Además realizamos de nuevo la gráfica para observar los cambios que el test nos confirma.
 
@@ -1021,11 +1020,10 @@ $$y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \beta_4(x_1 \cdot x_2) + 
 Donde $\beta_4$ representa ese efecto conjunto que va más allá de la simple suma de los factores.
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
-# Ajuste del modelo con el término de interacción
+library(broom)
+
+
 modelo_extra_final <- lm(ViolentCrimes_bc ~ PctKids2Par * PctUnemployed + NumStreet, data = datos_modelo_final)
-
-# 1. Tabla elegante para el resumen del modelo
-
 
 tabla_interaccion <- tidy(modelo_extra_final)
 
@@ -1036,13 +1034,13 @@ tabla_interaccion %>%
   kable_styling(latex_options = c("striped", "hold_position"), 
                 full_width = FALSE)
 
-# 2. Cálculo del Número de Condición para evaluar Multicolinealidad
 matriz_x <- model.matrix(modelo_extra_final)
 lambdas_final <- eigen(t(matriz_x) %*% matriz_x)$values
 kappa_final <- max(lambdas_final) / min(lambdas_final)
 
-# 3. Impresión formateada para el PDF
-cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo es de %.2f.\n", kappa_final))
+r2_ajustado <- summary(modelo_extra_final)$adj.r.squared
+
+cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo es de %.2f y el R-cuadrado ajustado es de %.4f.\n", kappa_final, r2_ajustado))
 ```
 **Conclusión Final: **
 

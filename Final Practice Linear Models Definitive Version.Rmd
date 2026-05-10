@@ -705,8 +705,67 @@ Es completamente posible y válido hacer inferencia en ambos modelos, ya que los
 
 Además, la significación global (ANOVA) en ambos modelos es total ($p = 0$), y la influencia máxima medida por la Distancia de Cook se mantiene por debajo del umbral de peligro de 1 (0.5645 y 0.7161, respectivamente). Por tanto, los intervalos de confianza, los p-valores individuales y las conclusiones estratégicas que se extraigan son matemáticamente sólidas.
 
+# Desafío Extra: El Refinamiento del Modelo y el Efecto Catalizador
 
+¿Es la delincuencia el simple resultado de una suma de factores aislados entre sí, o existe un "efecto catalizador" donde el impacto de un problema social se multiplica exponencialmente al chocar con otro? Hasta ahora, nuestro modelo AIC ha asumido una relación lineal y aditiva, sin embargo, para alcanzar un nivel de precisión excelente, debemos preguntarnos si la estructura del modelo es lo suficientemente robusta para capturar la complejidad real de nuestros datos.
 
+## Optimización Estructural mediante Transformación Box-Cox
+
+Tras el diagnóstico del modelo AIC, observamos que el supuesto de homocedasticidad se cumplía por un margen muy ajustado ($p = 0.0537$). Para reforzar la validez de nuestras inferencias y corregir la ligera curvatura observada en los residuos, aplicamos una transformación Box-Cox.
+
+Esta técnica busca el parámetro $\lambda$ óptimo que maximiza la verosimilitud del ajuste, transformando la variable respuesta para estabilizar la varianza y mejorar la normalidad. Matemáticamente, la transformación se define como: 
+$$z_{\lambda,i} = \frac{y_i^\lambda - 1}{\lambda \dot{y}^{\lambda-1}} \quad \text{si } \lambda \neq 0$$
+Donde $\dot{y}$ es la media geométrica de las observaciones. Al aplicar este procedimiento, nos aseguramos de que el modelo no solo sea predictivo, sino matemáticamente impecable.
+
+```{r}
+library(MASS)
+
+bc <- boxcox(modelo_aic, plotit = TRUE)
+lambda_opt <- bc$x[which.max(bc$y)]
+
+media_geo <- exp(mean(log(datos_modelo_final$ViolentCrimesPerPop)))
+datos_modelo_final$ViolentCrimes_bc <- (datos_modelo_final$ViolentCrimesPerPop^lambda_opt - 1) / (lambda_opt * media_geo^(lambda_opt - 1))
+
+modelo_refinado_bc <- lm(ViolentCrimes_bc ~ PctKids2Par + PctUnemployed + NumStreet, data = datos_modelo_final)
+
+summary(modelo_refinado_bc)
+bptest(modelo_refinado_bc)
+```
+Además realizamos de nuevo la gráfica para observar los cambios que el test nos confirma.
+
+```{r}
+# 1. Residuos vs Valores Ajustados (Para ver si la línea es más "recta")
+plot(modelo_refinado_bc, which = 1, 
+     main = "Residuos vs Ajustados (Refinado)",
+     col = "darkgray", pch = 20)
+
+```
+## Términos de Interacción
+
+Una vez optimizada la estructura matemática, procedemos a enriquecer la interpretación estratégica.
+En sociología criminal, es normal considerar que el impacto del desempleo (PctUnemployed) no es lineal ni aislado sino que su efecto puede ser mucho más devastador en comunidades con estructuras familiares ya debilitadas (PctKids2Par).Introducimos un término de interacción para verificar si estas variables "interactúan" entre sí, alterando su peso individual en la predicción.
+El modelo se expande de la siguiente forma:
+$$y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \beta_4(x_1 \cdot x_2) + \epsilon$$
+Donde $\beta_4$ representa ese efecto conjunto que va más allá de la simple suma de los factores.
+
+```{r}
+modelo_extra_final <- lm(ViolentCrimes_bc ~ PctKids2Par * PctUnemployed + NumStreet, data = datos_modelo_final)
+
+summary(modelo_extra_final)
+
+lambdas_final <- eigen(t(model.matrix(modelo_extra_final)) %*% model.matrix(modelo_extra_final))$values
+kappa_final <- max(lambdas_final) / min(lambdas_final)
+cat("Número de condición final:", kappa_final, "\n")
+```
+**Conclusión Final: **
+
+Tras la evaluación de técnicas más avanzadas para superar las limitaciones del modelo AIC inicial, hemos sacado las siguientes conclusiones:
+
+* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró estabilizar la varianza de los residuos, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.4256, garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7602.
+
+* **Análisis de Interacciones y Complejidad:** Exploramos la hipótesis de un efecto multiplicador entre el desempleo y las estructuras familiares, sin embargo, los resultados indicaron que el término de interacción no es estadísticamente significativo ($p = 0.6175$). Su inclusión no solo redujo la calidad del ajuste ($R^2$ ajustado bajó a 0.7587), sino que provocó un aumento innecesario en la inestabilidad numérica, con un número de condición ($\kappa$) de 949.01, lo que señala un riesgo de multicolinealidad moderada que no teníamos anteriormente.
+
+* **Selección del Modelo Óptimo:** Siguiendo el principio de parsimonia, que nos dicta la preferencia por el modelo más sencillo que mejor explique los datos, se descarta el modelo con interacciones. El modelo aditivo con transformación Box-Cox se establece como el definitivo de la práctica, al ser el más eficiente, robusto ante problemas de varianza y con la mayor capacidad predictiva demostrada.
 
 
 

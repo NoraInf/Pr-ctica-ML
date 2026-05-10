@@ -431,7 +431,11 @@ datos_modelo_final <- datos_modelo[, variables_finales]
 
 En base a la selección de variables previa, proponemos un modelo de Regresión Lineal Múltiple para predecir la tasa de crímenes violentos. El modelo teórico poblacional se especifica mediante la siguiente ecuación:
 
-$$ViolentCrimesPerPop = \beta_0 + \beta_1 PctKids2Par + \beta_2 PctUnemployed + \beta_3 TotalPctDiv + \beta_4 NumStreet + \beta_5 LemasSwFTPerPop + \epsilon$$
+\begin{align*}
+ViolentCrimesPerPop &= \beta_0 + \beta_1 PctKids2Par + \beta_2 PctUnemployed + \beta_3 TotalPctDiv + \beta_4 NumStreet \\
+&\quad + \beta_5 LemasSwFTPerPop + \epsilon
+\end{align*}
+
 Donde:
 
 $\beta_0$ representa el intercepto.

@@ -423,41 +423,203 @@ La magnitud de impacto preventivo de familias biparentales es mayor que el sinho
 
 # Evaluación de la Bondad de Ajuste
 
+Para garantizar la fiabilidad de nuestras predicciones, evaluamos la bondad del ajuste mediante tres criterios métricos fundamentales.
 
+## Contraste de Significación Global (ANOVA)
 
+Este contraste nos servirá para evaluar si la variabilidad explicada por el modelo ajustado es suficientemente grande comparada con la que queda sin explicar (la de los residuos). Para ello, plantearemos si el conjunto de variables explicativas aporta información conjunta significativa, enfrentando la siguiente hipótesis nula frente a la alternativa:
+$$H_0 : \beta_1 = \beta_2 = \dots = \beta_{p-1} = 0$$
+$$H_1 : \text{algún } \beta_i \neq 0$$
+El estadístico de contraste que usaremos de referencia, que bajo $H_0$ se distribuye como una F de Fisher con $p-1$ y $n-p$ grados de libertad, es:
+$$F = \frac{SSR/(p-1)}{SSE/(n-p)} = \frac{MSR}{MSE} \sim F_{(p-1,n-p)}$$
+```{r}
+# 1. Contraste de significación global (ANOVA)
+afit <- anova(modelo_final)
 
+# Determinamos el número de efectos en la tabla (el último es el Error/Residual)
+nterminos <- length(afit[[1]])
 
+# Agrupamos los componentes de la Regresión (excluyendo el último término)
+gl.ssr <- sum(afit[[1]][-nterminos])
+ssr <- sum(afit[[2]][-nterminos])
+msr <- ssr / gl.ssr
 
+# Extraemos los componentes del Error (el último término)
+gl.sse <- afit[[1]][nterminos]
+sse <- afit[[2]][nterminos]
+mse <- afit[[3]][nterminos]
 
+# Calculamos el estadístico F y su p-valor
+f <- msr / mse
+p.f <- 1 - pf(f, gl.ssr, gl.sse)
 
+# Pintamos la tabla Anova en formato 'tradicional' como en el libro
+n <- nrow(datos_modelo_final)
+var_y <- var(datos_modelo_final$ViolentCrimesPerPop, na.rm = TRUE)
 
+cat("-----------------------------------------------------------\n")
+cat("TABLA DE ANOVA GLOBAL\n")
+cat("            gl       SS         MS         F         p-valor \n")
+cat(paste("Regresión  ", gl.ssr, "  ", round(ssr, 4), "  ", round(msr, 4), "  ", round(f, 4), "  ", formatC(p.f, format = "e", digits = 3), "\n"))
+cat(paste("Error      ", gl.sse, " ", round(sse, 4), "  ", round(mse, 4), "\n"))
+cat(paste("Total      ", n-1, " ", round((n-1)*var_y, 4), "\n"))
+cat("-----------------------------------------------------------\n")
+```
+Observando los resultados obtenidos de nuestro modelo, el estadístico F obtenido es 76.5312 con un p-valor de 0 aproximadamente. Dado que el p-valor es estrictamente inferior a 0.05, rechazamos la hipótesis nula $H_0$. Concluimos que el modelo es globalmente significativo y que las variables seleccionadas predicen conjuntamente la criminalidad de forma válida.
 
+## Coeficiente de Determinación ($R^2$)
 
+El coeficiente de determinación $R^2$ se define como la parte proporcional de la variabilidad de los datos que es explicada por el modelo ajustado:
+$$R^2 = \frac{SSR}{S_{yy}} = 1 - \frac{SSE}{S_{yy}}$$
+Puesto que siempre es posible conseguir un $R^2$ artificialmente grande añadiendo más términos , utilizamos su versión ajustada, $R^2_a$, que penaliza la inclusión de variables innecesarias al tener en cuenta los grados de libertad.
+$$R^2_a = 1 - \left( \frac{n - 1}{n - p} \right) [1 - R^2]$$
+```{r}
+# 2. Coeficiente de determinación (R2 y R2 ajustado)
+r2 <- sfit$r.squared
+r2_adj <- sfit$adj.r.squared
 
+tabla_r2 <- data.frame(
+  Metrica = c("R2 Múltiple", "R2 Ajustado"),
+  Valor = c(round(r2, 4), round(r2_adj, 4))
+)
 
+kable(tabla_r2, format = "html", align = c("l", "c"), 
+      caption = "Coeficientes de Determinación") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE)
+```
+Nuestro modelo presenta un $R^2$ múltiple de 0.7613 y un $R^2_a$ ajustado de 0.751321. Esto indica que nuestras variables explicativas logran capturar y explicar aproximadamente el 75.13% de la variabilidad total de los crímenes violentos. Este es un ajuste robusto y satisfactorio, especialmente tratándose de modelización de comportamiento socioeconómico.
 
+## Desviación Típica de los Residuos ($s$) y Coeficiente de Variación ($CV$)
 
+La suma de cuadrados residual, $SSE$, da una medida de la desviación entre las observaciones y las estimaciones del modelo. Dividiendo por sus grados de libertad ($n-p$), obtenemos la varianza residual. Su raíz cuadrada es el error residual estimado $s$ ($\hat{\sigma}$):
+$$s = \sqrt{MSE} = \sqrt{\frac{SSE}{n - p}}$$
+Para valorar si este error de predicción es grande o pequeño de forma relativa, calculamos su Coeficiente de Variación ($CV$), dividiendo $s$ entre la media observada de la respuesta $\bar{y}$:
+$$CV = \frac{s}{\bar{y}} \cdot 100$$
+```{r}
+# 3. Desviación típica de los residuos y CV
+s <- sfit$sigma
+media_y <- mean(datos_modelo_final$ViolentCrimesPerPop, na.rm = TRUE)
+cv_sigma <- (s / media_y) * 100
 
+tabla_error <- data.frame(
+  Metrica = c("Desviación Típica de los Residuos (s)", "Coeficiente de Variación (CV %)"),
+  Valor = c(round(s, 4), round(cv_sigma, 2))
+)
 
+# Generamos la tabla con el formato corporativo
+kable(tabla_error, format = "html", align = c("l", "c"), 
+      caption = "Métricas de Error Residual") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#2C3E50") %>%
+  column_spec(1, bold = TRUE)
+```
+Con un Coeficiente de Variación del 35.17% ($s = 0.1359$), el error relativo supera el umbral del 30%. Esto nos indica que, aunque el modelo es excelente para analizar los impulsores del crimen a nivel estratégico, las predicciones numéricas exactas para comunidades individuales tendrán un margen de error considerable que debe tenerse en cuenta.
 
+# Diagnóstico del Modelo (Análisis de Residuos)
 
+Para garantizar que nuestras estimaciones e inferencias sean matemáticamente válidas, debemos comprobar que los residuos de nuestro modelo cumplen las hipótesis fundamentales del modelo de regresión lineal. Si alguna falla, las predicciones o los niveles de significatividad podrían estar sesgados.
 
+## Normalidad de los Residuos
 
+Asumimos que los errores siguen una distribución normal centrada en cero:
+$$H_0: \epsilon_i \sim N(0, \sigma^2)$$
+Para realizar este diagnóstico, en lugar de utilizar los residuos comunes, evaluamos los residuos externamente estudentizados ($rt_i$). Esta transformación es necesaria porque aísla la influencia de los datos originales (de la matriz de diseño) y estabiliza la varianza de los errores, evaluándose matemáticamente como:
+$$rt_i = \frac{e_i}{\sqrt{s^2_{(i)}(1 - h_{ii})}}$$
+Comenzamos el diagnóstico con una inspección visual a través del Gráfico Q-Q (QQ-Plot). Este gráfico contrasta los residuos de nuestro modelo contra los valores teóricos esperados si la distribución fuera perfectamente normal.
 
+```{r}
+# 1.1 Residuos Estudentizados y QQ-Plot
+r <- rstudent(modelo_final)
 
+qqnorm(r, main = "Gráfico Q-Q de Normalidad")
+qqline(r, col = "red", lwd = 2)
+```
+Como complemento visual al QQ-Plot, que es muy sensible a los valores extremos, utilizamos el histograma para comprobar de un vistazo la simetría y la forma de la distribución.
 
+```{r}
+# 1.2 Histograma de los residuos
+hist(r, prob = TRUE, main = "Histograma de Residuos", xlab = "Residuos estudentizados", col = "lightgray")
+xseq <- seq(min(r), max(r), length = 100)
+lines(xseq, dnorm(xseq, mean(r), sd(r)), col = "blue", lwd = 2)
+```
+Por último, para evitar valoraciones subjetivas de los gráficos, corroboramos las evidencias mediante pruebas estadísticas. Calcularemos el test de Shapiro-Wilk y el de Kolmogorov-Smirnov. A nivel de consultoría, basaremos nuestra conclusión definitiva en el test de Shapiro-Wilk, ya que es una prueba específica diseñada exclusivamente para evaluar la normalidad. El test de Kolmogorov-Smirnov se presenta como apoyo, pero al ser un contraste de bondad de ajuste de propósito general, tiene menor potencia analítica para este caso.
 
+```{r}
+# 1.3 Contrastes Formales de Normalidad
+shapiro.test(r)
 
+ks.test(r, "pnorm", mean = mean(r), sd = sd(r))
+```
+A nivel visual, el gráfico Q-Q nos generaba confusión en los valores atípicos, aunque lo demás siguiera una normal pero el histograma nos confirma y muestra una clara tendencia asimilable a la campana de Gauss. Analíticamente, la prueba principal de Shapiro-Wilk nos devuelve un p-valor de 0.5141, mientras que el test de soporte de Kolmogorov-Smirnov resulta en un p-valor de 0.8787. Dado que ambos p-valores son muy superiores a 0.05, aceptamos la hipótesis nula, concluyendo que el supuesto de normalidad se cumple de forma satisfactoria, validando la solidez de nuestras inferencias estadísticas anteriores.
 
+## Homocedasticidad
 
+Para que las estimaciones de los intervalos de confianza y los p-valores de nuestro modelo sean fiables, debemos cumplir la hipótesis de homocedasticidad. Es decir, la varianza de los errores debe mantenerse constante para cualquier valor predicho; en términos de negocio, el modelo no debe equivocarse más en las comunidades con alta criminalidad que en las de criminalidad baja.
 
+Iniciaremos el diagnóstico con un análisis gráfico, representando los residuos frente a los valores ajustados predichos ($\hat{y}_i$). El objetivo de esta visualización es ver una nube de puntos aleatoria y sin tendencias, con forma de banda horizontal en torno al cero. Si la varianza no fuera constante (heterocedasticidad), observaríamos patrones claros, como una forma de "embudo".
 
+```{r}
+# 2.1 Análisis Gráfico de Homocedasticidad
+# Usamos los residuos estudentizados calculados en el paso anterior (r)
+plot(fitted(modelo_final), r, 
+     xlab = "Valores Ajustados (Predicciones)", 
+     ylab = "Residuos Estudentizados",
+     main = "Residuos vs. Valores Ajustados",
+     pch = 20, col = "darkgray")
 
+# Añadimos una línea horizontal en el cero y una curva de tendencia suavizada
+abline(h = 0, lty = 2, col = "black", lwd = 2)
+lines(lowess(fitted(modelo_final), r), col = "red", lwd = 2)
+```
+Para corroborar de forma rigurosa la inspección visual, utilizamos el test de Breusch-Pagan. Elegimos este test porque está diseñado para modelos de regresión y evalúa específicamente si la magnitud de los residuos puede ser explicada matemáticamente por nuestras variables predictoras.
 
+$$H_0: Var(\epsilon_i) = \sigma^2$$ 
+$$H_1: Var(\epsilon_i) = f(x_i) \quad \text{(Heterocedasticidad)}$$
 
+```{r}
+# 2.2 Contraste Formal de Homocedasticidad (Breusch-Pagan)
+library(lmtest)
 
+bp_test <- bptest(modelo_final)
 
+cat("Test de Breusch-Pagan: BP =", bp_test$statistic, ", p-valor =", bp_test$p.value, "\n")
+```
+Aunque el análisis gráfico inicial nos generaba ciertas dudas debido a las desviaciones ligeramente pronunciadas de la línea de tendencia, el test estadístico descarta nuestro problema. El test de Breusch-Pagan tiene un estadístico $BP = 8.3037$ con un p-valor de 0.1403. Como el p-valor es muy superior a 0.05, no podemos rechazar la hipótesis nula. Por lo tanto, queda corroborado estadísticamente que el supuesto de homocedasticidad se cumple de forma satisfactoria y estadísticamente significativa. Esto nos asegura que el margen de error de nuestras predicciones sea estable a lo largo de los distintos niveles de criminalidad estimados.
 
+## Existencia de Valores Sobreinfluyentes
+
+Para continuar es crucial identificar si existe un subconjunto reducido de datos que altere de manera desproporcionada el ajuste y las estimaciones finales. En nuestro contexto, esto significaría que una única comunidad con dinámicas criminales extremas estaría "tirando" de la recta de regresión como un imán, sesgando todas nuestras recomendaciones.
+
+Por consiguiente, para diagnosticar este problema, la métrica principal es la Distancia de Cook ($D_i$). Este estadístico mide el impacto global de una observación calculando exactamente cuánto cambiarían los coeficientes del modelo si excluyéramos ese punto específico del análisis. Matemáticamente se define como:
+
+$$D_i = \frac{(\hat{\beta}_{(i)} - \hat{\beta})' X'X (\hat{\beta}_{(i)} - \hat{\beta})}{p s^2}$$
+Donde $\hat{\beta}_{(i)}$ representa el vector de coeficientes estimados sin la observación $i$. Si obtenemos un valor $D_i > 1$ indica que esa observación es altamente influyente para la estabilidad de nuestro modelo.
+
+```{r}
+# 4.1 Análisis Gráfico de Valores Influyentes (Distancia de Cook)
+plot(modelo_final, which = 4, 
+     main = "Distancia de Cook por Observación", 
+     col = "darkblue", lwd = 2)
+
+# Añadimos una línea de referencia conservadora en D = 1
+abline(h = 1, lty = 2, col = "red", lwd = 2)
+```
+El análisis visual realizado es excelente para nuestro modelo, sin embargo, a nivel técnico necesitamos un análisis analítico riguroso para corroborar con la visualización. Para ello, calculamos la matriz completa de medidas de influencia globales. Con esta matriz podremos evaluar múltiples métricas avanzadas como DFFITS para el impacto en predicciones, DFBETAS para el impacto en cada coeficiente y COVRATIO para la precisión general y además sabremos si algún registro desastibiliza el modelo.
+
+```{r}
+# 4.2 Análisis Analítico Exhaustivo
+# Calculamos la matriz completa de medidas de influencia
+medidas_influencia <- influence.measures(modelo_final)
+
+# Extraemos un resumen de las observaciones marcadas como potencialmente influyentes
+summary(medidas_influencia)
+```
+Al evaluar analíticamente la matriz de medidas de influencia globales, la salida muestra las observaciones más influyentes. Tenemos registros como el 53 y el 77 que presentan características atípicas (evidenciadas por un alto apalancamiento en la columna hat) que llegan a alterar ligeramente predicciones puntuales (dffit) o incluso coeficientes individuales (dfb). 
+Por otro lado, la mayoría de las observaciones listadas aparecen marcadas casi exclusivamente por afectar levemente a la amplitud de los intervalos de confianza (cov.r), pero no suponen un sesgo real para las estimaciones.
+
+Sin embargo, el indicador definitivo para evaluar el peligro estructural sobre el modelo es la distancia de Cook (cook.d). Al observar dicha columna, comprobamos que el valor máximo absoluto de toda la muestra es de 0.56 (observación 53), manteniéndose muy por debajo del umbral crítico de 1. Por tanto, concluimos que ninguna de estas observaciones atípicas ejerce una influencia desproporcionada que logre desestabilizar el ajuste global, confirmando que el modelo es altamente robusto.
 
 
 

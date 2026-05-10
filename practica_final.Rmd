@@ -1,13 +1,9 @@
 ---
 output:
   pdf_document:
-    toc: true
-    toc_depth: 2 
     latex_engine: pdflatex
     keep_tex: false
 header-includes:
-  - \let\oldmaketitle\maketitle
-  - \renewcommand{\maketitle}{\oldmaketitle\newpage}
   - \usepackage[most]{tcolorbox}
   - \definecolor{naranja_tema}{HTML}{E67E22}
   - \definecolor{azul_tema}{HTML}{2C3E50}
@@ -28,7 +24,6 @@ always_allow_html: true
     \centering
     \vspace*{1cm}
     
-    % Logo de la Universidad 
     \includegraphics[width=0.4\textwidth]{Logo_Uni.png}   
     
     {\scshape\LARGE Universidad Miguel Hernández de Elche \par}
@@ -41,7 +36,6 @@ always_allow_html: true
     {\Large\itshape Grado en Ciencia de Datos e Inteligencia Artificial \par}
     \vfill
     
-    % Información del autor y profesor
     \begin{minipage}{0.4\textwidth}
         \begin{flushleft} \large
             \emph{Autores:}\\
@@ -60,9 +54,13 @@ always_allow_html: true
     {\large \today \par}
 \end{titlepage}
 
+\newpage
+\setcounter{tocdepth}{2}
+\tableofcontents
+\newpage
+
 ```{r setup, include=FALSE,warning=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 
 
 # Consultoría Propuesta
@@ -85,7 +83,7 @@ inversión en recursos y predecir el efecto de futuras políticas socioeconómic
 # Estudio de las variables
 
 ## Visualización preliminar
-(Tabla 1) Antes de profundizar en el código, debemos hacer un análisis preliminar de nuestras
+Antes de profundizar en el código, debemos hacer un análisis preliminar de nuestras
 variables, esto nos permitirá seleccionar un subconjunto de mayor interés de las 
 mismas.
 
@@ -138,8 +136,8 @@ Debido a la gran dimensionalidad del conjunto de datos (128 variables), el anál
 
 
 
-## Información Variables y Justificación de Elección
-En la tabla anterior, podemos ver un resumen de cada variable, así como unas primeras observaciones
+## Información Variables y Justificación de Elección 
+En la tabla anterior (Table 1), podemos ver un resumen de cada variable, así como unas primeras observaciones
 y el tipo de dato.
 
 Debido al alto número de variables, hemos seleccionado un subconjunto de 18 variables, que creemos serán
@@ -278,7 +276,7 @@ kable(resumen_integral, format = "latex", longtable = TRUE, align = "c", row.nam
 
 **Conclusiones: **
 
-(Tabla 2) Este análisis del resumen estadístico revela varias conclusiones clave sobre la distribución de las variables:
+Este análisis del resumen estadístico revela varias conclusiones clave sobre la distribución de las variables:
 
 * **Normalización de Datos:** Todas las variables presentan un mínimo de 0.00 y un máximo de 1.00. Esto confirma que el conjunto de datos ha sido prenormalizado, estableciendo una escala uniforme que evitará que las variables con números absolutos más grandes dominen de manera desproporcionada el modelo de regresión posterior. Esto es ideal para nuestro estudio.
 
@@ -340,9 +338,9 @@ corrplot(cor_matrix,
          diag = FALSE)
 ```
 
-**Conclusiones de correlaciones simples: **
+**Conclusiones de correlaciones simples: ** (Table 3)
 
-(Tabla 3) En la tabla de correlación simple con nuestra variable objetivo ViolentCrimesPerPop, observamos que la inmigración reciente (PctRecentImmig), el condado (county) y el porcentaje de oficiales (LemasPctOfficDrugUn) asignados a la unidad de drogas casi no tienen correlación alguna con los crímenes violentos.
+En la tabla de correlación simple con nuestra variable objetivo ViolentCrimesPerPop, observamos que la inmigración reciente (PctRecentImmig), el condado (county) y el porcentaje de oficiales (LemasPctOfficDrugUn) asignados a la unidad de drogas casi no tienen correlación alguna con los crímenes violentos.
 
 Por otro lado vemos que el porcentaje de personas que viven en pobreza (PctPopUnderPov) y de desempleados (PctUnemployed), así como de divorcios en general (FemalePctDiv, TotalPctDiv, MalePctDivorce) tienen una correlación positiva elevada, que indica que una mala situación personal o familiar puede resultar en violencia. Además, el porcentaje de niños y adolescentes que viven con sus dos padres juntos (PctKids2Par y PctTeen2Par respectivamente) tienen una correlación negativa muy elevada, lo que indica que actúan como un fuerte factor de protección frente a la criminalidad.
 
@@ -383,9 +381,9 @@ kable(df_cor_parcial, format = "latex", align = "c", row.names = FALSE,
 ```
 
 
-**Conclusiones de Correlaciones Parciales: **
+**Conclusiones de Correlaciones Parciales: ** (Table 4)
 
-(Tabla 4) Tras la realización de las correlaciones parciales, observamos una caída drástica en el efecto que tenían todas las variables respecto a la variable dependiente. Este resultado confirma un alto grado de multicolinealidad, al asumir que varios conjuntos de variables están relacionadas de forma muy fuerte. En definitiva, muchas de estas métricas socioeconómicas comparten información redundante y explican el mismo comportamiento subyacente. Por ejemplo, para las métricas que describen el porcentaje de divorciados hay una clara relación, en el sentido de que el porcentaje total de los divorciados (**TotalPctDvr**) es básicamente la media ponderada de los subgrupos de divorciados de hombres y mujeres (**MalePctDrv**, **FemalePctDivorce ** respectivamente), por lo que no añaden nueva información relevante. Esto se ve reflejado en la pérdida de la correlación de estas dos últimas métricas, que incluso pasan a tener un efecto negativo.
+Tras la realización de las correlaciones parciales, observamos una caída drástica en el efecto que tenían todas las variables respecto a la variable dependiente. Este resultado confirma un alto grado de multicolinealidad, al asumir que varios conjuntos de variables están relacionadas de forma muy fuerte. En definitiva, muchas de estas métricas socioeconómicas comparten información redundante y explican el mismo comportamiento subyacente. Por ejemplo, para las métricas que describen el porcentaje de divorciados hay una clara relación, en el sentido de que el porcentaje total de los divorciados (**TotalPctDvr**) es básicamente la media ponderada de los subgrupos de divorciados de hombres y mujeres (**MalePctDrv**, **FemalePctDivorce ** respectivamente), por lo que no añaden nueva información relevante. Esto se ve reflejado en la pérdida de la correlación de estas dos últimas métricas, que incluso pasan a tener un efecto negativo.
 
 A pesar de esta reducción, el análisis muestra los verdaderos motores de la criminalidad en las comunidades. El desempleo (**PctUnemployed**) y las personas sin hogar (**NumStreet**) destacan cómo los principales desencadenantes de la violencia registrada (encontramos una correlación positiva), mientras que lo contrario pasa con las variables que describen los hogares estables (**PctKids2Par**, **PctTeen2Par**). A mayor porcentaje de hijos que viven con ambos padres en la misma casa, menores parecen ser los registros de violencia en aquel condado. Por otra parte, identificamos que la pobreza (**PctPopUnderPov**) pierde su impacto estadístico al ser aislada, mostrando que es la mezcla de factores cómo las condiciones de precariedad laboral y desentendimiento familiar lo que realmente hace que aumenten los casos de violencia.
 
@@ -467,11 +465,11 @@ kable(tabla_coef, format = "latex", align = "c",
   column_spec(5, color = ifelse(sfit$coefficients[,4] < 0.05, "#27AE60", "black"), bold = ifelse(sfit$coefficients[,4] < 0.05, TRUE, FALSE))
 ```
 
-**Interpretación de los resultados: **
+**Interpretación de los resultados: ** (Table 5)
 
   * **Intercepto** ($\beta_0$): El valor predicho del intercepto es **0.4219**, siendo *estadísticamente significativo* (**p-valor = 8.171e-03**). Esto indica que, *si todas las variables del modelo fuesen cero*, la tasa base esperada de crímenes violentos sería de 0.4219.
 
-(Tabla 5) Tras analizar la magnitud de los coeficientes, los **factores que presentan un impacto estadísticamente significativo** sobre la variable dependiente son **PctKids2Par** con un coeficiente de -0.6112 (p-valor = **2.592e-06**), su impacto es el más fuerte y altamente significativo de todo el modelo. Por cada unidad que aumenta la proporción de niños en hogares biparentales, la tasa de *crímenes violentos disminuye* drásticamente en 0.6112 unidades, asumiendo que el resto de variables se mantienen constantes. Por otra parte **NumStreet** tiene un impacto positivo y significativo de 0.2769 (p-valor = **6.338e-04**). A mayor presencia de personas sin hogar en las calles, mayor es la tasa de crímenes violentos registrada. Y por último **PctUnemployed** también muestra un efecto positivo y significativo estimado en 0.2715 (p-valor = **4.883e-03**), confirmando que el desempleo actúa como un claro impulsor directo de la criminalidad.
+Tras analizar la magnitud de los coeficientes, los **factores que presentan un impacto estadísticamente significativo** sobre la variable dependiente son **PctKids2Par** con un coeficiente de -0.6112 (p-valor = **2.592e-06**), su impacto es el más fuerte y altamente significativo de todo el modelo. Por cada unidad que aumenta la proporción de niños en hogares biparentales, la tasa de *crímenes violentos disminuye* drásticamente en 0.6112 unidades, asumiendo que el resto de variables se mantienen constantes. Por otra parte **NumStreet** tiene un impacto positivo y significativo de 0.2769 (p-valor = **6.338e-04**). A mayor presencia de personas sin hogar en las calles, mayor es la tasa de crímenes violentos registrada. Y por último **PctUnemployed** también muestra un efecto positivo y significativo estimado en 0.2715 (p-valor = **4.883e-03**), confirmando que el desempleo actúa como un claro impulsor directo de la criminalidad.
 
 **Efectos No Significativos**: De forma muy clara, el modelo detecta que la tasa de divorcios (**TotalPctDiv**, p-valor = 3.451e-01) y el número de efectivos policiales (**LemasSwFTPerPop**, p-valor = 4.094e-01) *no son estadísticamente significativos* para este modelo. Esto nos sugiere que, una vez controlados el desempleo, el sinhogarismo y la estructura familiar, ni los divorcios a nivel general ni la cantidad de policías en las calles aportan una influencia demostrable estadísticamente sobre la variación de los crímenes violentos.
 
@@ -496,7 +494,7 @@ kable(tabla_intervalos,
   row_spec(0, bold = TRUE, color = "white", background = "#2C3E50")
 ```
 
-(Tabla 6) Los intervalos de confianza confirman matemáticamente nuestras observaciones previas; los predictores PctKids2Par, NumStreet y PctUnemployed **no cruzan el cero**, demostrando *significancia estadística*. En cambio, los intervalos de los **divorcios** (TotalPctDiv) y la **presencia policial** (LemasSwFTPerPop) sí incluyen el cero, confirmando de forma definitiva la *falta de evidencia de que realmente influyan* en el crimen y, por tanto, en este modelo.
+Los intervalos de confianza confirman matemáticamente nuestras observaciones previas; los predictores PctKids2Par, NumStreet y PctUnemployed **no cruzan el cero**, demostrando *significancia estadística*. En cambio, los intervalos de los **divorcios** (TotalPctDiv) y la **presencia policial** (LemasSwFTPerPop) sí incluyen el cero, confirmando de forma definitiva la *falta de evidencia de que realmente influyan* en el crimen y, por tanto, en este modelo.
 
 
 **Recomendaciones Estratégicas: **
@@ -589,7 +587,7 @@ kable(tabla_r2, format = "latex", align = c("l", "c"),
 ```
 
 
-(Tabla 7) Nuestro modelo presenta un $R^2$ múltiple de **0.7613** y un $R^2_a$ ajustado de **0.751321**. Esto indica que nuestras variables explicativas logran capturar y explicar aproximadamente el 75.13% de la variabilidad total de los crímenes violentos. Este es un **ajuste robusto y satisfactorio**, especialmente tratándose de modelización de comportamiento socioeconómico.
+Nuestro modelo presenta un $R^2$ múltiple de **0.7613** (Table 7) y un $R^2_a$ ajustado de **0.751321**. Esto indica que nuestras variables explicativas logran capturar y explicar aproximadamente el 75.13% de la variabilidad total de los crímenes violentos. Este es un **ajuste robusto y satisfactorio**, especialmente tratándose de modelización de comportamiento socioeconómico.
 
 
 ## Desviación Típica de los Residuos ($s$) y Coeficiente de Variación ($CV$)
@@ -618,7 +616,7 @@ kable(tabla_error, format = "latex", align = c("l", "c"),
   column_spec(1, bold = TRUE)
 ```
 
-(Tabla 8) Con un Coeficiente de Variación del 35.17% ($s = 0.1359$), **el error relativo supera el umbral del 30%**. Esto nos indica que, aunque el modelo es excelente para analizar los impulsores del crimen a nivel estratégico, las predicciones numéricas exactas para comunidades individuales tendrán un **margen de error considerable** que debe tenerse en cuenta.
+Con un Coeficiente de Variación del 35.17% ($s = 0.1359$), **el error relativo supera el umbral del 30%**. Esto nos indica que, aunque el modelo es excelente para analizar los impulsores del crimen a nivel estratégico, las predicciones numéricas exactas para comunidades individuales tendrán un **margen de error considerable** que debe tenerse en cuenta. Se puede ver en Table 8.
 
 ---
 
@@ -914,7 +912,7 @@ kable(metricas, format = "latex", align = "c", digits = 4,
 
 ## Evaluación y Selección del Modelo
 
-(Tabla 9) El **Modelo AIC es estadísticamente superior** y nuestra opción definitiva. 
+El **Modelo AIC es estadísticamente superior** y nuestra opción definitiva. (Véase Table 9)
 
 Al evaluar las métricas, el algoritmo ha logrado *reducir la complejidad del modelo, pasando de 5 a 3 variables*, logrando un doble beneficio: 
 
@@ -949,30 +947,25 @@ PctKids2Par, PctUnemployed y NumStreet.
 
 ## Optimización Estructural mediante Transformación Box-Cox
 
-(Tabla 10) Tras el diagnóstico del modelo AIC, observamos que el supuesto de homocedasticidad se cumplía por un *margen muy ajustado* ($p = 0.0537$). Para reforzar la validez de nuestras inferencias y corregir la ligera curvatura observada en los residuos, **aplicamos una transformación Box-Cox**.
+Tras el diagnóstico del modelo AIC, observamos que el supuesto de homocedasticidad se cumplía por un *margen muy ajustado* ($p = 0.0537$). Para reforzar la validez de nuestras inferencias y corregir la ligera curvatura observada en los residuos, **aplicamos una transformación Box-Cox**.
 
 Esta técnica busca el parámetro $\lambda$ óptimo que maximiza la verosimilitud del ajuste, transformando la variable respuesta para **estabilizar la varianza y mejorar la normalidad**. Matemáticamente, la transformación se define como: 
 $$z_{\lambda,i} = \frac{y_i^\lambda - 1}{\lambda \dot{y}^{\lambda-1}} \quad \text{si } \lambda \neq 0$$
 Donde $\dot{y}$ es la media geométrica de las observaciones. Al aplicar este procedimiento, nos aseguramos de que el modelo no solo sea predictivo, sino matemáticamente impecable.
 
-
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
-# Librerías necesarias para estética, modelado y maquetación
 library(MASS)
-library(ggplot2)
 library(broom)
 library(knitr)
 library(kableExtra)
+library(ggplot2)
 library(lmtest)
 
-# 1. Extraemos los datos de Box-Cox sin generar el gráfico por defecto
 bc <- boxcox(modelo_aic, plotit = FALSE)
 
-# 2. Encontramos el lambda óptimo y preparamos datos para ggplot
 df_bc <- data.frame(lambda = bc$x, loglik = bc$y)
 lambda_opt <- bc$x[which.max(bc$y)]
 
-# 3. Generamos un gráfico Box-Cox con estilo profesional (ggplot2)
 grafico_bc <- ggplot(df_bc, aes(x = lambda, y = loglik)) +
   geom_line(color = "#2c3e50", linewidth = 1) +
   geom_vline(xintercept = lambda_opt, color = "#e74c3c", linetype = "dashed", linewidth = 0.8) +
@@ -985,44 +978,27 @@ grafico_bc <- ggplot(df_bc, aes(x = lambda, y = loglik)) +
   theme_minimal() +
   theme(plot.title = element_text(face = "bold", hjust = 0.5))
 
-# Imprimimos el gráfico
 print(grafico_bc)
 
-# 4. Aplicamos la transformación a la variable respuesta
 media_geo <- exp(mean(log(datos_modelo_final$ViolentCrimesPerPop)))
 datos_modelo_final$ViolentCrimes_bc <- (datos_modelo_final$ViolentCrimesPerPop^lambda_opt - 1) / (lambda_opt * media_geo^(lambda_opt - 1))
 
-# 5. Ajustamos el modelo refinado
 modelo_refinado_bc <- lm(ViolentCrimes_bc ~ PctKids2Par + PctUnemployed + NumStreet, data = datos_modelo_final)
 
-# 6. Extraemos los coeficientes y métricas globales
 tabla_resumen <- tidy(modelo_refinado_bc)
-metricas_globales <- glance(modelo_refinado_bc)
 
-# Preparamos el texto solo con el R2 Ajustado y el Estadístico F
-texto_metricas <- sprintf(
-  "R-cuadrado Ajustado: %.4f | Estadístico F: %.2f",
-  metricas_globales$adj.r.squared, 
-  metricas_globales$statistic
-)
-
-# Generamos la tabla bonita para el PDF
 tabla_resumen %>%
   kable(format = "latex", booktabs = TRUE, digits = 4,
         col.names = c("Término", "Estimación", "Error Est.", "Estadístico t", "p-valor"),
         caption = "Resumen del Modelo Lineal (Transformación Box-Cox)") %>%
   kable_styling(latex_options = c("striped", "hold_position"), 
-                full_width = FALSE) %>%
-  footnote(general = texto_metricas,
-           general_title = "Métricas Globales del Modelo: ",
-           footnote_as_chunk = TRUE)
+                full_width = FALSE)
 
-# 7. Test de Breusch-Pagan formateado para el informe
-bp_resultado <- bptest(modelo_refinado_bc)
-cat(sprintf("Diagnóstico de Homocedasticidad (Test de Breusch-Pagan): BP = %.4f, p-valor = %.4f\n", 
-            bp_resultado$statistic, bp_resultado$p.value))
+bptest(modelo_refinado_bc)
+
+r2_ajustado <- summary(modelo_refinado_bc)$adj.r.squared
+cat(sprintf("Adjusted R-squared: %.4f\n", r2_ajustado))
 ```
-
 Además realizamos de nuevo la gráfica para observar los cambios que el test nos confirma.
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
@@ -1042,11 +1018,10 @@ $$y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \beta_4(x_1 \cdot x_2) + 
 Donde $\beta_4$ representa ese efecto conjunto que va más allá de la simple suma de los factores.
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
-# Ajuste del modelo con el término de interacción
+library(broom)
+
+
 modelo_extra_final <- lm(ViolentCrimes_bc ~ PctKids2Par * PctUnemployed + NumStreet, data = datos_modelo_final)
-
-# 1. Tabla elegante para el resumen del modelo
-
 
 tabla_interaccion <- tidy(modelo_extra_final)
 
@@ -1055,25 +1030,23 @@ tabla_interaccion %>%
         col.names = c("Término", "Estimación", "Error Est.", "Estadístico t", "p-valor"),
         caption = "Resumen del Modelo Refinado (con Interacción)") %>%
   kable_styling(latex_options = c("striped", "hold_position"), 
-                full_width = FALSE) %>%
-  footnote(general = texto_metricas,
-           general_title = "Métricas Globales del Modelo: ",
-           footnote_as_chunk = TRUE)
-# 2. Cálculo del Número de Condición para evaluar Multicolinealidad
+                full_width = FALSE)
+
 matriz_x <- model.matrix(modelo_extra_final)
 lambdas_final <- eigen(t(matriz_x) %*% matriz_x)$values
 kappa_final <- max(lambdas_final) / min(lambdas_final)
 
-# 3. Impresión formateada para el PDF
-cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo es de %.2f.\n", kappa_final))
+r2_ajustado <- summary(modelo_extra_final)$adj.r.squared
+
+cat(sprintf("Nota analítica: El número de condición final (kappa) del modelo es de %.2f y el R-cuadrado ajustado es de %.4f.\n", kappa_final, r2_ajustado))
 ```
 **Conclusión Final: **
 
-(Tabla 11) Tras la evaluación de técnicas más avanzadas para superar las limitaciones del modelo AIC inicial, hemos sacado las siguientes conclusiones:
+Tras la evaluación de técnicas más avanzadas para superar las limitaciones del modelo AIC inicial, hemos sacado las siguientes conclusiones:
 
-* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró **estabilizar la varianza de los residuos**, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.388, garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7602.
+* **Efectividad de la Transformación Box-Cox:** La aplicación de una transformación de la familia Box-Cox ($\lambda \approx 0.4$) resultó ser la mejora más significativa de esta sección. Logró **estabilizar la varianza de los residuos**, elevando el p-valor del test de Breusch-Pagan de un valor crítico de 0.0537 a un valor sólido 0.388 (Véase Table 10), garantizando así el cumplimiento del supuesto de homocedasticidad y la fiabilidad de las inferencias. Además, esta optimización de la estructura incrementó la capacidad explicativa del modelo, alcanzando un $R^2$ ajustado de 0.7602.
 
-* **Análisis de Interacciones y Complejidad:** Exploramos la hipótesis de un efecto multiplicador entre el desempleo y las estructuras familiares, sin embargo, los resultados indicaron que **el término de interacción no es estadísticamente significativo** ($p = 0.6175$). Su inclusión no solo redujo la calidad del ajuste ($R^2$ ajustado bajó a 0.7587), sino que provocó un aumento innecesario en la inestabilidad numérica, con un número de condición ($\kappa$) de 949.01, lo que señala un riesgo de multicolinealidad moderada que no teníamos anteriormente.
+* **Análisis de Interacciones y Complejidad:** Exploramos la hipótesis de un efecto multiplicador entre el desempleo y las estructuras familiares (Véase Table 11), sin embargo, los resultados indicaron que **el término de interacción no es estadísticamente significativo** ($p = 0.6175$). Su inclusión no solo redujo la calidad del ajuste ($R^2$ ajustado bajó a 0.7587), sino que provocó un aumento innecesario en la inestabilidad numérica, con un número de condición ($\kappa$) de 949.01, lo que señala un riesgo de multicolinealidad moderada que no teníamos anteriormente.
 
 * **Selección del Modelo Óptimo:** Siguiendo el principio de parsimonia, que nos dicta la preferencia por el modelo más sencillo que mejor explique los datos, se descarta el modelo con interacciones. El **modelo aditivo con transformación Box-Cox se establece como el definitivo** de la práctica, al ser el más eficiente, robusto ante problemas de varianza y con la mayor capacidad predictiva demostrada.
 
